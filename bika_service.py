@@ -15,7 +15,9 @@ class BikaService(object):
 
     def __init__(self, bikaApi):
         # Web service methods
+        get('/bika/login')(bikaApi.login)
         get('/bika/get/clients')(bikaApi.get_clients)
+        get('/bika/get/contacts')(bikaApi.get_contacts)
         get('/bika/get/samples')(bikaApi.get_samples)
         get('/bika/get/analysis_requests')(bikaApi.get_analysis_requests)
         get('/bika/get/arimports')(bikaApi.get_arimports)
@@ -28,6 +30,27 @@ class BikaService(object):
         get('/bika/get/analysis_profiles')(bikaApi.get_analysis_profiles)
         get('/bika/get/analysis_services')(bikaApi.get_analysis_services)
         get('/bika/get/sample_types')(bikaApi.get_sample_types)
+
+        get('/bika/set/analysis_result')(bikaApi.set_analysis_result)
+        get('/bika/set/analyses_results')(bikaApi.set_analyses_results)
+
+        get('/bika/cancel/batch')(bikaApi.cancel_batch)
+        get('/bika/cancel/analysis_request')(bikaApi.cancel_analysis_request)
+        get('/bika/reinstate/batch')(bikaApi.reinstate_batch)
+        get('/bika/reinstate/analysis_request')(bikaApi.reinstate_analysis_request)
+
+        get('/bika/action/receive_sample')(bikaApi.receive_sample)
+        get('/bika/action/close_batch')(bikaApi.close_batch)
+        get('/bika/action/open_batch')(bikaApi.open_batch)
+        get('/bika/action/submit')(bikaApi.submit)
+        get('/bika/action/verify')(bikaApi.verify)
+        get('/bika/action/publish')(bikaApi.publish)
+
+        get('/bika/create/batch')(bikaApi.create_batch)
+        get('/bika/create/analysis_request')(bikaApi.create_analysis_request)
+
+        get('/bika/count/analysis_requests')(bikaApi.count_analysis_requests)
+        get('/bika/count/samples')(bikaApi.count_samples)
 
         # check status
         post('/check/status')(self.test_server)
