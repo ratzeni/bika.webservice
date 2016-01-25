@@ -62,7 +62,9 @@ class BikaApiRestService(object):
                 client_id=str(r['ClientID']),
                 path=str(r['path'])) for r in res['objects']]
 
-        return sorted(result, key=lambda k: k['title'])
+        return dict(objects=result, total=str(res['total_objects']),
+                    first=str(res['first_object_nr']), last=str(res['last_object_nr']),
+                    success=str(res['success']), error=str(res['error']))
 
     @wrap_default
     def get_contacts(self):
@@ -76,7 +78,9 @@ class BikaApiRestService(object):
                 email_address=str(r['EmailAddress']),
                 path=str(r['path'])) for r in res['objects'] if client_id in r['path']]
 
-        return sorted(result, key=lambda k: k['title'])
+        return dict(objects=result, total=str(res['total_objects']),
+                    first=str(res['first_object_nr']), last=str(res['last_object_nr']),
+                    success=str(res['success']), error=str(res['error']))
 
     @wrap_default
     def get_samples(self):
@@ -119,7 +123,10 @@ class BikaApiRestService(object):
                 transitions=[dict(id=str(t['id']), title=str(t['title'])) for t in r['transitions']],
                 )for r in res['objects'] if not review_state or review_state and review_state not in ['cancelled'] and dict(id='reinstate',title='Reinstate') not in r['transitions']
                   or review_state and review_state in ['cancelled'] and dict(id='reinstate',title='Reinstate') in r['transitions'] ]
-        return result
+
+        return dict(objects=result, total=str(res['total_objects']),
+                    first=str(res['first_object_nr']), last=str(res['last_object_nr']),
+                    success=str(res['success']), error=str(res['error']))
 
     @wrap_default
     def get_arimports(self):
@@ -152,18 +159,36 @@ class BikaApiRestService(object):
                 uid=str(r['UID']),
                 creator=str(r['Creator']),
                 transitions=[dict(id=str(t['id']), title=str(t['title'])) for t in r['transitions']],
+                #analysis_requests=self._get_analysis_requests(r['id']),
                 )for r in res['objects'] if not review_state or review_state and review_state not in ['cancelled'] and len(r['transitions']) > 1
                   or review_state and review_state in ['cancelled'] and len(r['transitions']) == 1 ]
 
-        #return sorted(result, key=lambda k: k[sort_on])
-        return result
+        return dict(objects=result, total=str(res['total_objects']),
+                    first=str(res['first_object_nr']), last=str(res['last_object_nr']),
+                    success=str(res['success']), error=str(res['error']))
 
     @wrap_default
     def get_worksheets(self):
         params = request.query
         bika = self._get_bika_instance(params)
-        result = bika.get_worksheets(params)
-        return result
+        res = bika.get_worksheets(params)
+        result = [dict(
+                id=str(r['id']),
+                title=str(r['title']),
+                description=str(r['description']),
+                path=str(r['path']),
+                analyst=str(r['Analyst']),
+                instrument=str(r['Instrument']),
+                creation_date=str(r['creation_date']),
+                modification_date=str(r['modification_date']),
+                date=str(r['Date']),
+                remarks=str(r['Remarks']),
+                transitions=[dict(id=str(t['id']), title=str(t['title'])) for t in r['transitions']],
+        ) for r in res['objects']]
+
+        return dict(objects=result, total=str(res['total_objects']),
+                    first=str(res['first_object_nr']), last=str(res['last_object_nr']),
+                    success=str(res['success']), error=str(res['error']))
 
     @wrap_default
     def get_invoices(self):
@@ -206,7 +231,9 @@ class BikaApiRestService(object):
                 services_data=self._get_service_data(r['AnalysisServicesSettings'])
                 )for r in res['objects']]
 
-        return sorted(result, key=lambda k: k['title'])
+        return dict(objects=result, total=str(res['total_objects']),
+                    first=str(res['first_object_nr']), last=str(res['last_object_nr']),
+                    success=str(res['success']), error=str(res['error']))
 
     @wrap_default
     def get_analysis_services(self):
@@ -222,7 +249,9 @@ class BikaApiRestService(object):
                 path=str(r['path']),
                 ) for r in res['objects']]
 
-        return sorted(result, key=lambda k: k['title'])
+        return dict(objects=result, total=str(res['total_objects']),
+                    first=str(res['first_object_nr']), last=str(res['last_object_nr']),
+                    success=str(res['success']), error=str(res['error']))
 
 
     @wrap_default
@@ -237,7 +266,9 @@ class BikaApiRestService(object):
                 prefix=str(r['Prefix']),
                 ) for r in res['objects']]
 
-        return sorted(result, key=lambda k: k['title'])
+        return dict(objects=result, total=str(res['total_objects']),
+                    first=str(res['first_object_nr']), last=str(res['last_object_nr']),
+                    success=str(res['success']), error=str(res['error']))
 
     @wrap_default
     def count_samples(self):
@@ -255,89 +286,192 @@ class BikaApiRestService(object):
         result = str(res['last_object_nr'])
         return result
 
+    @wrap_default
     def create_batch(self):
         params = request.query
         bika = self._get_bika_instance(params)
         res = bika.create_batch(self._format_params(params))
         return self._outcome_creating(res, params)
 
+    @wrap_default
     def create_analysis_request(self):
         params = request.query
         bika = self._get_bika_instance(params)
         res = bika.create_analysis_request(self._format_params(params))
         return self._outcome_creating(res, params)
 
+    @wrap_default
+    def create_worksheet(self):
+        params = request.query
+        bika = self._get_bika_instance(params)
+        res = bika.create_worksheet(self._format_params(params))
+        return self._outcome_creating(res, params)
+
+    @wrap_default
     def cancel_batch(self):
         params = request.query
         bika = self._get_bika_instance(params)
         res = bika.cancel_batch(self._format_params(params))
         return self._outcome_action(res, params)
 
+    @wrap_default
     def cancel_analysis_request(self):
         params = request.query
         bika = self._get_bika_instance(params)
         res = bika.cancel_analysis_request(self._format_params(params))
         return self._outcome_action(res, params)
 
+    @wrap_default
     def reinstate_batch(self):
         params = request.query
         bika = self._get_bika_instance(params)
         res = bika.reinstate_batch(self._format_params(params))
         return self._outcome_action(res, params)
 
+    @wrap_default
     def reinstate_analysis_request(self):
         params = request.query
         bika = self._get_bika_instance(params)
         res = bika.reinstate_analysis_request(self._format_params(params))
         return self._outcome_action(res, params)
 
+    @wrap_default
     def open_batch(self):
         params = request.query
         bika = self._get_bika_instance(params)
         res = bika.open_batch(self._format_params(params))
         return self._outcome_action(res, params)
 
+    @wrap_default
     def close_batch(self):
         params = request.query
         bika = self._get_bika_instance(params)
         res = bika.close_batch(self._format_params(params))
         return self._outcome_action(res, params)
 
+    @wrap_default
     def receive_sample(self):
         params = request.query
         bika = self._get_bika_instance(params)
         res = bika.receive_sample(self._format_params(params))
         return self._outcome_action(res, params)
 
+    @wrap_default
     def submit(self):
         params = request.query
         bika = self._get_bika_instance(params)
         res = bika.submit(self._format_params(params))
         return self._outcome_action(res, params)
 
+    @wrap_default
     def verify(self):
         params = request.query
         bika = self._get_bika_instance(params)
         res = bika.verify(self._format_params(params))
         return self._outcome_action(res, params)
 
+    @wrap_default
     def publish(self):
         params = request.query
         bika = self._get_bika_instance(params)
         res = bika.publish(self._format_params(params))
         return self._outcome_action(res, params)
 
+    @wrap_default
     def set_analysis_result(self):
         params = request.query
         bika = self._get_bika_instance(params)
         res = bika.update(self._format_params(params))
         return self._outcome_update(res, params)
 
+    @wrap_default
     def set_analyses_results(self):
         params = request.query
         bika = self._get_bika_instance(params)
         res = bika.update_many(self._format_params(params))
         return self._outcome_update(res, params)
+
+    @wrap_default
+    def get_users(self):
+        params = request.query
+        bika = self._get_bika_instance(params)
+        res = bika.get_users(self._format_params(params))
+        result = [dict(
+                userid=str(r['userid']),
+                fullname=str(r['fullname']),
+        ) for r in res['users']]
+
+        return dict(objects=result,
+                    success=str(res['success']), error=str(res['error']))
+
+    @wrap_default
+    def get_manager_users(self):
+        params = request.query
+        bika = self._get_bika_instance(params)
+        res = bika.get_manager_users()
+        result = [dict(
+                userid=str(r['userid']),
+                fullname=str(r['fullname']),
+        ) for r in res['users']]
+
+        return dict(objects=result,
+                    success=str(res['success']), error=str(res['error']))
+
+    @wrap_default
+    def get_analyst_users(self):
+        params = request.query
+        bika = self._get_bika_instance(params)
+        res = bika.get_analyst_users()
+        result = [dict(
+                userid=str(r['userid']),
+                fullname=str(r['fullname']),
+        ) for r in res['users']]
+
+        return dict(objects=result,
+                    success=str(res['success']), error=str(res['error']))
+
+    @wrap_default
+    def get_clerk_users(self):
+        params = request.query
+        bika = self._get_bika_instance(params)
+        res = bika.get_clerk_users()
+        result = [dict(
+                userid=str(r['userid']),
+                fullname=str(r['fullname']),
+        ) for r in res['users']]
+
+        return dict(objects=result,
+                    success=str(res['success']), error=str(res['error']))
+
+    @wrap_default
+    def get_client_users(self):
+        params = request.query
+        bika = self._get_bika_instance(params)
+        res = bika.get_client_users()
+        result = [dict(
+                userid=str(r['userid']),
+                fullname=str(r['fullname']),
+        ) for r in res['users']]
+
+        return dict(objects=result,
+                    success=str(res['success']), error=str(res['error']))
+
+    @wrap_default
+    def update_worksheet(self):
+        params = request.query
+        bika = self._get_bika_instance(params)
+        res = bika.update(self._format_params(params))
+        return self._outcome_update(res, params)
+
+    def _get_analysis_requests(self, batch_id):
+        params = request.query
+        bika = self._get_bika_instance(params)
+        this_params = dict(title= batch_id, include_fields='id')
+        res = bika.get_analysis_requests(this_params)
+        return [dict(
+                id=str(r['id']),
+                path=str(r['path']),
+        )for r in res['objects']]
 
     def _get_analyses(self, analyses):
         return [dict(
@@ -391,7 +525,6 @@ class BikaApiRestService(object):
         return mirror
 
     def _outcome_creating(self, res, params):
-        callback = params.get('callback')
         result = None
         if 'obj_id' in res:
             result = dict(success='True', obj_id=str(res['obj_id']))
@@ -402,24 +535,25 @@ class BikaApiRestService(object):
 
         if not result:
             result = res
-        return '{0}({1})'.format(callback, {'result': result })
+        return result
 
     def _outcome_action(self, res, params):
-        callback = params.get('callback')
         result = None
         if 'message' in res:
             result = dict(success='False', message=str(res['message']))
         else:
             result = dict(success='True')
 
-        return '{0}({1})'.format(callback, {'result': result })
+        return result
 
     def _outcome_update(self, res, params):
-        callback = params.get('callback')
         result = None
         if 'message' in res:
             result = dict(success='False', message=str(res['message']))
         else:
             result = dict(success='True', updates=[{str(k): str(v)}  for t in res['updates'] for k,v in t.iteritems()] if 'updates' in res else list())
 
-        return '{0}({1})'.format(callback, {'result': result })
+        if not result:
+            result = res
+
+        return result

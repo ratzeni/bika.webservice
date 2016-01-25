@@ -30,9 +30,16 @@ class BikaService(object):
         get('/bika/get/analysis_profiles')(bikaApi.get_analysis_profiles)
         get('/bika/get/analysis_services')(bikaApi.get_analysis_services)
         get('/bika/get/sample_types')(bikaApi.get_sample_types)
+        get('/bika/get/users')(bikaApi.get_users)
+        get('/bika/get/manager_users')(bikaApi.get_manager_users)
+        get('/bika/get/analyst_users')(bikaApi.get_analyst_users)
+        get('/bika/get/clerk_users')(bikaApi.get_clerk_users)
+        get('/bika/get/client_users')(bikaApi.get_client_users)
 
         get('/bika/set/analysis_result')(bikaApi.set_analysis_result)
         get('/bika/set/analyses_results')(bikaApi.set_analyses_results)
+
+        get('/bika/update/worksheet')(bikaApi.update_worksheet)
 
         get('/bika/cancel/batch')(bikaApi.cancel_batch)
         get('/bika/cancel/analysis_request')(bikaApi.cancel_analysis_request)
@@ -48,6 +55,7 @@ class BikaService(object):
 
         get('/bika/create/batch')(bikaApi.create_batch)
         get('/bika/create/analysis_request')(bikaApi.create_analysis_request)
+        get('/bika/create/worksheet')(bikaApi.create_worksheet)
 
         get('/bika/count/analysis_requests')(bikaApi.count_analysis_requests)
         get('/bika/count/samples')(bikaApi.count_samples)
