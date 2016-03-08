@@ -7,7 +7,7 @@ from bikaclient import BikaClient
 class BikaApiRestService(object):
 
     def __init__(self):
-        self.user_roles = ['LabManager', 'Analyst', 'LabClerk', 'Client']
+        self.user_roles = ['Site Administrator', 'LabManager', 'Analyst', 'LabClerk', 'Client']
         pass
 
     def _get_bika_instance(self, params):
@@ -44,23 +44,25 @@ class BikaApiRestService(object):
     def login(self):
         params = request.query
         bika = self._get_bika_instance(params)
+        login_test = bika.get_clients(params)
+        if 'objects' in login_test and len(login_test['objects']) > 0:
 
-        user = params.get('bika_user')
-        for role in self.user_roles:
-            params['roles']=role
-            res = bika.get_users(self._format_params(params))
-            if 'users' in res:
-                for r in res['users']:
-                    if user in r['fullname']:
-                        result = dict(
-                            userid=str(r['userid']),
-                            fullname=str(r['fullname']),
-                            role=role,
-                        )
+            user = params.get('bika_user')
+            for role in self.user_roles:
+                params['roles']=role
+                res = bika.get_users(self._format_params(params))
+                if 'users' in res:
+                    for r in res['users']:
+                        if user in r['fullname']:
+                            result = dict(
+                                userid=str(r['userid']),
+                                fullname=str(r['fullname']),
+                                role=role,
+                            )
 
-                        return dict(user=result,
-                                    is_signed='True',
-                                    success=str(res['success']), error=str(res['error']))
+                            return dict(user=result,
+                                        is_signed='True',
+                                        success=str(res['success']), error=str(res['error']))
 
         return dict(user=[],
                     is_signed='False',
@@ -212,10 +214,34 @@ class BikaApiRestService(object):
         return result
 
     @wrap_default
-    def get_supply_order(self):
+    def get_supply_orders(self):
         params = request.query
         bika = self._get_bika_instance(params)
-        result = bika.get_supply_order(params)
+        res = bika.get_supply_orders(params)
+        result = [dict(
+                id=str(r['id']),
+                title=str(r['title']),
+                description=str(r['description']),
+                path=str(r['path']),
+                creation_date=str(r['creation_date']),
+                modification_date=str(r['modification_date']),
+                expiration_date=str(r['expirationdDate']),
+                dispatched_date=str(r['DateDispatched']),
+                order_date=str(r['OrderDate']),
+                date=str(r['Date']),
+                order_number=str(r['OrderNumber']),
+                location=str(r['location']),
+                remarks=str(r['Remarks']),
+                review_state=str(r['subject'][0]) if len(r['subject'])==1 else '',
+                uid=str(r['UID']),
+                creator=str(r['Creator']),
+                transitions=[dict(id=str(t['id']), title=str(t['title'])) for t in r['transitions']],
+        ) for r in res['objects']]
+
+        return dict(objects=result, total=str(res['total_objects']),
+                    first=str(res['first_object_nr']), last=str(res['last_object_nr']),
+                    success=str(res['success']), error=str(res['error']))
+
         return result
 
     @wrap_default

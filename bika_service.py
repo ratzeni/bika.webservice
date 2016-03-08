@@ -25,7 +25,7 @@ class BikaService(object):
         get('/bika/get/worksheets')(bikaApi.get_worksheets)
         get('/bika/get/invoices')(bikaApi.get_invoices)
         get('/bika/get/price_list')(bikaApi.get_price_list)
-        get('/bika/get/supply_order')(bikaApi.get_supply_order)
+        get('/bika/get/supply_orders')(bikaApi.get_supply_orders)
         get('/bika/get/artemplates')(bikaApi.get_artemplates)
         get('/bika/get/analysis_profiles')(bikaApi.get_analysis_profiles)
         get('/bika/get/analysis_services')(bikaApi.get_analysis_services)
