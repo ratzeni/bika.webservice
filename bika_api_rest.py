@@ -166,6 +166,7 @@ class BikaApiRestService(object):
                 remarks=str(r['Remarks']),
                 uid=str(r['UID']),
                 creator=str(r['Creator']),
+                cost_center=str(r['rights']),
                 transitions=[dict(id=str(t['id']), title=str(t['title'])) for t in r['transitions']],
                 )for r in res['objects']]
 
@@ -225,13 +226,16 @@ class BikaApiRestService(object):
                 path=str(r['path']),
                 creation_date=str(r['creation_date']),
                 modification_date=str(r['modification_date']),
-                expiration_date=str(r['expirationdDate']),
+                expiration_date=str(r['expirationDate']),
                 dispatched_date=str(r['DateDispatched']),
                 order_date=str(r['OrderDate']),
                 date=str(r['Date']),
                 order_number=str(r['OrderNumber']),
                 location=str(r['location']),
+                rights=str(r['rights']),
                 remarks=str(r['Remarks']),
+                invoice=str(r['Invoice']),
+                client_id=str(r['path']).split('/')[-2],
                 review_state=str(r['subject'][0]) if len(r['subject'])==1 else '',
                 uid=str(r['UID']),
                 creator=str(r['Creator']),
@@ -342,6 +346,13 @@ class BikaApiRestService(object):
         return self._outcome_creating(res, params)
 
     @wrap_default
+    def create_supply_order(self):
+        params = request.query
+        bika = self._get_bika_instance(params)
+        res = bika.create_supply_order(self._format_params(params))
+        return self._outcome_creating(res, params)
+
+    @wrap_default
     def cancel_batch(self):
         params = request.query
         bika = self._get_bika_instance(params)
@@ -437,6 +448,27 @@ class BikaApiRestService(object):
         params = request.query
         bika = self._get_bika_instance(params)
         res = bika.publish(self._format_params(params))
+        return self._outcome_action(res, params)
+
+    @wrap_default
+    def activate_supply_order(self):
+        params = request.query
+        bika = self._get_bika_instance(params)
+        res = bika.activate_supply_order(self._format_params(params))
+        return self._outcome_action(res, params)
+
+    @wrap_default
+    def deactivate_supply_order(self):
+        params = request.query
+        bika = self._get_bika_instance(params)
+        res = bika.deactivate_supply_order(self._format_params(params))
+        return self._outcome_action(res, params)
+
+    @wrap_default
+    def dispatch_supply_order(self):
+        params = request.query
+        bika = self._get_bika_instance(params)
+        res = bika.dispatch_supply_order(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
@@ -556,6 +588,20 @@ class BikaApiRestService(object):
 
     @wrap_default
     def update_worksheets(self):
+        params = request.query
+        bika = self._get_bika_instance(params)
+        res = bika.update_many(self._format_params(params))
+        return self._outcome_update(res, params)
+
+    @wrap_default
+    def update_supply_order(self):
+        params = request.query
+        bika = self._get_bika_instance(params)
+        res = bika.update(self._format_params(params))
+        return self._outcome_update(res, params)
+
+    @wrap_default
+    def update_supply_orders(self):
         params = request.query
         bika = self._get_bika_instance(params)
         res = bika.update_many(self._format_params(params))

@@ -45,6 +45,8 @@ class BikaService(object):
         get('/bika/update/analysis_requests')(bikaApi.update_analysis_requests)
         get('/bika/update/worksheet')(bikaApi.update_worksheet)
         get('/bika/update/worksheets')(bikaApi.update_worksheets)
+        get('/bika/update/supply_order')(bikaApi.update_supply_order)
+        get('/bika/update/supply_orders')(bikaApi.update_supply_orders)
 
         get('/bika/cancel/batch')(bikaApi.cancel_batch)
         get('/bika/cancel/worksheet')(bikaApi.update_worksheets)
@@ -61,10 +63,14 @@ class BikaService(object):
         get('/bika/action/submit')(bikaApi.submit)
         get('/bika/action/verify')(bikaApi.verify)
         get('/bika/action/publish')(bikaApi.publish)
+        get('/bika/action/activate_supply_order')(bikaApi.activate_supply_order)
+        get('/bika/action/deactivate_supply_order')(bikaApi.deactivate_supply_order)
+        get('/bika/action/dispatch_supply_order')(bikaApi.dispatch_supply_order)
 
         get('/bika/create/batch')(bikaApi.create_batch)
         get('/bika/create/analysis_request')(bikaApi.create_analysis_request)
         get('/bika/create/worksheet')(bikaApi.create_worksheet)
+        get('/bika/create/supply_order')(bikaApi.create_supply_order)
 
         get('/bika/count/analysis_requests')(bikaApi.count_analysis_requests)
         get('/bika/count/samples')(bikaApi.count_samples)
