@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# This script can be used to handle the galaxy_menus service as a cronjob
-# add to the crontab a line like
-#
-# */5 * * * * $BIOBANK_REPO_PATH/services/galaxy_menus_service_cron.sh &
+. ./init.cfg
 
-SERVICE_DIR=/Users/utente/PycharmProjects/bika/bika.webservice
-PID_FILE=~/tmp/bika_service.pid
-HOST=0.0.0.0
-PORT=8088
+if [[ $1 == "start" || $1 == "stop"  || $1 == "restart" ]]
+	then
+		nohup python $SERVICE_DIR/bika_service.py --pid-file $PID_FILE --log-file $LOG_FILE --host $HOST --port $PORT --$1
+else
+	echo "usage: $0 start|stop|restart"
+	exit
+fi
 
-nohup python $SERVICE_DIR/bika_service.py --pid-file $PID_FILE --host $HOST --port $PORT
+exit

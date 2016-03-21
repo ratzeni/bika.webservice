@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import argparse, daemon, json, sys
+import argparse, daemon, json, sys, os
 try:
     from daemon.pidlockfile import PIDLockFile
 except ImportError:
@@ -93,7 +93,22 @@ class BikaService(object):
         log = open(logfile, 'a')
         pid =PIDLockFile(pidfile)
         with daemon.DaemonContext(stderr=log, pidfile=pid):
-            run(host=host, port=port, server=server, debug=debug)
+            run(host=host, port=port, server=server)
+
+    def stop_service(self, host, port, logfile, pidfile, server, debug=False):
+        log = open(logfile, 'a')
+        pid = int(open(pidfile).read())
+
+        try:
+            os.kill(pid, 9)
+            os.remove(pidfile)
+            log.write("Terminating on signal 15\n\n")
+        except:
+            print "Failed"
+
+    def restart_service(self, host, port, logfile, pidfile, server, debug=False):
+        self.stop_service(host, port, logfile, pidfile, server, debug)
+        self.start_service(host, port, logfile, pidfile, server, debug)
 
 
 def get_parser():
@@ -111,7 +126,15 @@ def get_parser():
                         default='/tmp/bika_service.pid')
     parser.add_argument('--log-file', type=str,
                         help='log file for the service daemon',
-                        default='/Users/utente/tmp/bika_service.log')
+                        default='/tmp/bika_service.log')
+
+    parser.add_argument('--start', action='store_true',
+                        help='Start service')
+    parser.add_argument('--stop', action='store_true',
+                        help='Stop service')
+    parser.add_argument('--restart', action='store_true',
+                        help='Restart service')
+
     return parser
 
 
@@ -124,8 +147,15 @@ def main(argv):
 
     bikaService = BikaService(bikaApi=bikaApi, irodsApi=irodsApi)
 
-    bikaService.start_service(args.host, args.port, args.log_file, args.pid_file,
-                              args.server, args.debug)
+    if args.start:
+        bikaService.start_service(args.host, args.port, args.log_file,
+                                  args.pid_file, args.server, args.debug)
+    elif args.stop:
+        bikaService.stop_service(args.host, args.port, args.log_file,
+                                 args.pid_file, args.server, args.debug)
+    elif args.restart:
+        bikaService.restart_service(args.host, args.port, args.log_file,
+                                    args.pid_file, args.server, args.debug)
 
 
 
