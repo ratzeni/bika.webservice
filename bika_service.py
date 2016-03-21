@@ -10,10 +10,11 @@ except ImportError:
 from bottle import post, get, run, response, request
 
 from bika_api_rest import BikaApiRestService
+from irods_api_rest import IrodsApiRestService
 
 class BikaService(object):
 
-    def __init__(self, bikaApi):
+    def __init__(self, bikaApi, irodsApi):
         # Web service methods
         get('/bika/login')(bikaApi.login)
         get('/bika/get/clients')(bikaApi.get_clients)
@@ -75,9 +76,13 @@ class BikaService(object):
         get('/bika/count/analysis_requests')(bikaApi.count_analysis_requests)
         get('/bika/count/samples')(bikaApi.count_samples)
 
+        get('/irods/get/running')(irodsApi.get_running_folders)
+        get('/irods/put/samplesheet')(irodsApi.put_samplesheet)
+
         # check status
         post('/check/status')(self.test_server)
         get('/bika/check/status')(bikaApi.test_server)
+        get('/irods/check/status')(irodsApi.test_server)
 
 
     def test_server(self):
@@ -106,7 +111,7 @@ def get_parser():
                         default='/tmp/bika_service.pid')
     parser.add_argument('--log-file', type=str,
                         help='log file for the service daemon',
-                        default='/tmp/bika_service.log')
+                        default='/Users/utente/tmp/bika_service.log')
     return parser
 
 
@@ -115,8 +120,9 @@ def main(argv):
     args = parser.parse_args(argv)
 
     bikaApi = BikaApiRestService()
+    irodsApi = IrodsApiRestService()
 
-    bikaService = BikaService(bikaApi=bikaApi)
+    bikaService = BikaService(bikaApi=bikaApi, irodsApi=irodsApi)
 
     bikaService.start_service(args.host, args.port, args.log_file, args.pid_file,
                               args.server, args.debug)

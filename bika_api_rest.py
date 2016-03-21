@@ -11,9 +11,9 @@ class BikaApiRestService(object):
         pass
 
     def _get_bika_instance(self, params):
-        return BikaClient(host=params.get('bika_host'),
-                          username=params.get('bika_user'),
-                          password=params.get('bika_passwd'))
+        return BikaClient(host=params.get('host'),
+                          username=params.get('username'),
+                          password=params.get('password'))
 
 
     def _success(self, body, return_code=200):
@@ -47,7 +47,7 @@ class BikaApiRestService(object):
         login_test = bika.get_clients(params)
         if 'objects' in login_test and len(login_test['objects']) > 0:
 
-            user = params.get('bika_user')
+            user = params.get('username')
             for role in self.user_roles:
                 params['roles']=role
                 res = bika.get_users(self._format_params(params))
@@ -661,9 +661,9 @@ class BikaApiRestService(object):
 
     def _format_params(self, params):
         mirror = dict(params)
-        del mirror['bika_host']
-        del mirror['bika_user']
-        del mirror['bika_passwd']
+        del mirror['host']
+        del mirror['username']
+        del mirror['password']
         del mirror['callback']
 
         return mirror

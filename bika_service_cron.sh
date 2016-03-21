@@ -6,7 +6,7 @@
 # */5 * * * * $BIOBANK_REPO_PATH/services/galaxy_menus_service_cron.sh &
 
 SERVICE_DIR=/Users/utente/PycharmProjects/bika/bika.webservice
-PID_FILE=/tmp/bika_service.pid
+PID_FILE=~/tmp/bika_service.pid
 HOST=0.0.0.0
 PORT=8088
 
