@@ -1,6 +1,7 @@
 from functools import wraps
 from bottle import post, get, run, response, request
 
+import xml.etree.ElementTree as ET
 import os
 import subprocess
 import json
@@ -44,14 +45,21 @@ class IrodsApiRestService(object):
     def get_running_folders(self):
         params = request.query
         cmd = 'get_running_folders'
+
         res = self._ssh_cmd(user=params.get('user'),
                             host=params.get('host'),
                             cmd=self._get_icmd(cmd=cmd, params=params))
 
+
         result = [dict(
-            running_folder=str(r)
+            running_folder=str(r),
+            run_info=self._get_run_info(params=params,
+                                        run=str(r)),
         ) for r in res['result']]
 
+        result.append(dict(
+            running_folder='MISSING RUN FOLDER',
+            run_info=dict()))
 
         return dict(objects=result, success=res.get('success'), error=res.get('error'))
 
@@ -117,6 +125,26 @@ class IrodsApiRestService(object):
         return res
 
 
+    def _get_run_info(self, params, run):
+
+        def _run_info_parser(run_info):
+            result = dict()
+            if len(run_info['result']) > 0:
+                root = ET.fromstringlist(run_info['result'])
+                result = dict(
+                    reads=[ r.attrib for r in root.iter('Read') ],
+                    fc_layout=[ fc.attrib for fc in root.iter('FlowcellLayout') ],
+                )
+            return result
+
+        cmd = 'get_run_info'
+        params.update(dict(this_run=run))
+        res =  self._ssh_cmd(user=params.get('user'),
+                            host=params.get('host'),
+                            cmd=self._get_icmd(cmd=cmd, params=params))
+
+        return _run_info_parser(res)
+
 
     def _scp_cmd(self, user, host, local_path, dest_path):
         remote = "{}@{}:{}".format(user, host, dest_path)
@@ -156,6 +184,10 @@ class IrodsApiRestService(object):
 
         icmds = dict(
             get_running_folders="ls {} | grep XX".format(params.get('run_folder')),
+
+            get_run_info="cat {}".format(os.path.join(params.get('run_folder',''),
+                                                  params.get('this_run',''),
+                                                  params.get('run_info_file',''))),
 
             iput="iput -R {} {} {}".format(params.get('irods_resource'),
                                            params.get('local_path'),
