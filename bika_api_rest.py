@@ -706,4 +706,4 @@ class BikaApiRestService(object):
     def __str(self, txt):
         if isinstance(txt, (type(None),int,float)):
             txt = str(txt)
-        return txt.encode('ascii', 'ignore')
+        return txt.encode('Latin-1', 'ignore')
