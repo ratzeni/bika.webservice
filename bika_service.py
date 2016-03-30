@@ -117,7 +117,7 @@ def get_parser():
                         help='web service binding host')
     parser.add_argument('--port', type=int, default='8088',
                         help='web service binding port')
-    parser.add_argument('--server', type=str, default='wsgiref',
+    parser.add_argument('--server', type=str, default='paste',
                         help='server library (use paste for multi-threaded backend)')
     parser.add_argument('--debug', action='store_true',
                         help='Enable web server DEBUG mode')
