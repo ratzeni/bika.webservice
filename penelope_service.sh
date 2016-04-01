@@ -16,11 +16,8 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 . ./init.cfg
 
-echo $DAEMON
-
 # Exit if the package is not installed
-[ -f "$DAEMON" ] || exit 0
-[ -f "$DAEMON" ] && chmod u+x $DAEMON
+[ -x "$DAEMON" ] || exit 0
 
 # Read configuration variable file if it is present
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
