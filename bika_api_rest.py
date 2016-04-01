@@ -130,6 +130,7 @@ class BikaApiRestService(object):
                 review_state=self.__str(r['review_state']) if 'published' in self.__str(r['review_state']) else self.__str(r['subject'][0]),
                 #review_state=self.__str(r['subject'][0]) if 'publishself.__str(r['review_state']) else self.__str(r['review_state']),
                 remarks=self.__str(r['Remarks']),
+                rights=self.__str(r['rights']),
                 results_interpretation=self.__str(r['ResultsInterpretation']),
                 params=self._get_environmental_conditions(r['EnvironmentalConditions']),
                 creator=self.__str(r['Creator']),

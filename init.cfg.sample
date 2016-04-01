@@ -3,5 +3,10 @@
 SERVICE_DIR=DUMMY_SERVICE_DIR
 PID_FILE=DUMMY_PID_FILE
 LOG_FILE=DUMMY_LOG_FILE
+NAME=bika_service.py
+DAEMON=$SERVICE_DIR/$NAME
 HOST=DUMMY_HOST
 PORT=DUMMY_PORT
+
+DAEMON_ARGS=" --host $HOST --port $PORT --server paste --pid-file $PID_FILE --log-file $LOG_FILE"
+SCRIPTNAME=/etc/init.d/penelope_service
