@@ -18,11 +18,16 @@ class IrodsApiRestService(object):
         pass
 
     def _success(self, body, return_code=200):
-        params = request.query
-        callback = params.get('callback')
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, GET, OPTIONS, PUT'
+        response.headers['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept'
         response.content_type = 'application/json'
         response.status = return_code
-        return '{0}({1})'.format(callback, {'result': body})
+        return json.dumps({'result': body}, encoding='latin1')
+
+    def _get_params(self, request_data):
+        for item in request_data:
+            return eval(item)
 
     def wrap_default(f):
         @wraps(f)
@@ -36,14 +41,14 @@ class IrodsApiRestService(object):
         return wrapper
 
     def test_server(self):
-        params = request.query
+        params = self._get_params(request.forms)
         callback = params.get('callback')
         status = {'status':'Server running'}
         return '{0}({1})'.format(callback, {'result': status })
 
     @wrap_default
     def get_running_folders(self):
-        params = request.query
+        params = self._get_params(request.forms)
         cmd = 'get_running_folders'
 
         res = self._ssh_cmd(user=params.get('user'),
@@ -65,7 +70,7 @@ class IrodsApiRestService(object):
 
     @wrap_default
     def put_samplesheet(self):
-        params = request.query
+        params = self._get_params(request.forms)
         samplesheet = json.loads(params.get('samplesheet'))
         f = NamedTemporaryFile(delete=False)
 

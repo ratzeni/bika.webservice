@@ -1,5 +1,7 @@
 from functools import wraps
 from bottle import post, get, run, response, request
+import json
+
 
 from bikaclient import BikaClient
 
@@ -17,11 +19,16 @@ class BikaApiRestService(object):
 
 
     def _success(self, body, return_code=200):
-        params = request.query
-        callback = params.get('callback')
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, GET, OPTIONS, PUT'
+        response.headers['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept'
         response.content_type = 'application/json'
         response.status = return_code
-        return '{0}({1})'.format(callback, {'result': body})
+        return json.dumps({'result': body}, encoding='latin1')
+
+    def _get_params(self, request_data):
+        for item in request_data:
+            return eval(item)
 
     def wrap_default(f):
         @wraps(f)
@@ -35,18 +42,16 @@ class BikaApiRestService(object):
         return wrapper
 
     def test_server(self):
-        params = request.query
-        callback = params.get('callback')
         status = {'status':'Server running'}
-        return '{0}({1})'.format(callback, {'result': status })
+        return json.dumps({'result': status}, encoding='latin1')
 
     @wrap_default
     def login(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
+
         login_test = bika.get_clients(params)
         if 'objects' in login_test and len(login_test['objects']) > 0:
-
             user = params.get('username')
             for role in self.user_roles:
                 params['roles']=role
@@ -70,7 +75,7 @@ class BikaApiRestService(object):
 
     @wrap_default
     def get_clients(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.get_clients(params)
         result = [dict(
@@ -85,7 +90,7 @@ class BikaApiRestService(object):
 
     @wrap_default
     def get_contacts(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.get_contacts(params)
         client_id = params.get('client_id', '')
@@ -101,14 +106,14 @@ class BikaApiRestService(object):
 
     @wrap_default
     def get_samples(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         result = bika.get_samples(params)
         return result
 
     @wrap_default
     def get_analysis_requests(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.get_analysis_requests(params)
         result = [dict(
@@ -144,14 +149,14 @@ class BikaApiRestService(object):
 
     @wrap_default
     def get_arimports(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         result = bika.get_arimports(params)
         return result
 
     @wrap_default
     def get_batches(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.get_batches(params)
         result = [dict(
@@ -178,7 +183,7 @@ class BikaApiRestService(object):
 
     @wrap_default
     def get_worksheets(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.get_worksheets(params)
         result = [dict(
@@ -204,21 +209,21 @@ class BikaApiRestService(object):
 
     @wrap_default
     def get_invoices(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         result = bika.get_invoices(params)
         return result
 
     @wrap_default
     def get_price_list(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         result = bika.get_price_list(params)
         return result
 
     @wrap_default
     def get_supply_orders(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.get_supply_orders(params)
         result = [dict(
@@ -252,14 +257,14 @@ class BikaApiRestService(object):
 
     @wrap_default
     def get_artemplates(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         result = bika.get_artemplates(params)
         return result
 
     @wrap_default
     def get_analysis_profiles(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.get_analysis_profiles(params)
         result = [dict(
@@ -276,7 +281,7 @@ class BikaApiRestService(object):
 
     @wrap_default
     def get_analysis_services(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res= bika.get_analysis_services(params)
         result = [dict(
@@ -296,7 +301,7 @@ class BikaApiRestService(object):
 
     @wrap_default
     def get_sample_types(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.get_sample_types(params)
         result = [dict(
@@ -312,7 +317,7 @@ class BikaApiRestService(object):
 
     @wrap_default
     def count_samples(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.get_samples(params)
         result = self.__str(res['total_objects'])
@@ -320,7 +325,7 @@ class BikaApiRestService(object):
 
     @wrap_default
     def count_analysis_requests(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.get_analysis_requests(params)
         result = self.__str(res['total_objects'])
@@ -328,168 +333,168 @@ class BikaApiRestService(object):
 
     @wrap_default
     def create_batch(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.create_batch(self._format_params(params))
         return self._outcome_creating(res, params)
 
     @wrap_default
     def create_analysis_request(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.create_analysis_request(self._format_params(params))
         return self._outcome_creating(res, params)
 
     @wrap_default
     def create_worksheet(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.create_worksheet(self._format_params(params))
         return self._outcome_creating(res, params)
 
     @wrap_default
     def create_supply_order(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.create_supply_order(self._format_params(params))
         return self._outcome_creating(res, params)
 
     @wrap_default
     def cancel_batch(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.cancel_batch(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
     def cancel_worksheet(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.cancel_worksheet(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
     def cancel_analysis_request(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.cancel_analysis_request(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
     def reinstate_batch(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.reinstate_batch(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
     def reinstate_worksheet(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.reinstate_worksheet(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
     def reinstate_analysis_request(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.reinstate_analysis_request(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
     def open_batch(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.open_batch(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
     def close_batch(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.close_batch(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
     def open_worsheet(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.open_worsheet(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
     def close_worsheet(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.close_worsheet(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
     def receive_sample(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.receive_sample(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
     def submit(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.submit(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
     def verify(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.verify(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
     def publish(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.publish(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
     def activate_supply_order(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.activate_supply_order(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
     def deactivate_supply_order(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.deactivate_supply_order(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
     def dispatch_supply_order(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.dispatch_supply_order(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
     def set_analysis_result(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.update(self._format_params(params))
         return self._outcome_update(res, params)
 
     @wrap_default
     def set_analyses_results(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.update_many(self._format_params(params))
         return self._outcome_update(res, params)
 
     @wrap_default
     def get_users(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.get_users(self._format_params(params))
         result = [dict(
@@ -502,7 +507,7 @@ class BikaApiRestService(object):
 
     @wrap_default
     def get_manager_users(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.get_manager_users()
         result = [dict(
@@ -515,7 +520,7 @@ class BikaApiRestService(object):
 
     @wrap_default
     def get_analyst_users(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.get_analyst_users()
         result = [dict(
@@ -528,7 +533,7 @@ class BikaApiRestService(object):
 
     @wrap_default
     def get_clerk_users(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.get_clerk_users()
         result = [dict(
@@ -541,7 +546,7 @@ class BikaApiRestService(object):
 
     @wrap_default
     def get_client_users(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.get_client_users()
         result = [dict(
@@ -555,62 +560,62 @@ class BikaApiRestService(object):
 
     @wrap_default
     def update_batch(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.update(self._format_params(params))
         return self._outcome_update(res, params)
 
     @wrap_default
     def update_batches(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.update_many(self._format_params(params))
         return self._outcome_update(res, params)
 
     @wrap_default
     def update_analysis_request(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.update(self._format_params(params))
         return self._outcome_update(res, params)
 
     @wrap_default
     def update_analysis_requests(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.update_many(self._format_params(params))
         return self._outcome_update(res, params)
 
     @wrap_default
     def update_worksheet(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.update(self._format_params(params))
         return self._outcome_update(res, params)
 
     @wrap_default
     def update_worksheets(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.update_many(self._format_params(params))
         return self._outcome_update(res, params)
 
     @wrap_default
     def update_supply_order(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.update(self._format_params(params))
         return self._outcome_update(res, params)
 
     @wrap_default
     def update_supply_orders(self):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.update_many(self._format_params(params))
         return self._outcome_update(res, params)
 
     def _get_analysis_requests(self, batch_id):
-        params = request.query
+        params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         this_params = dict(title= batch_id, include_fields='id')
         res = bika.get_analysis_requests(this_params)
@@ -666,8 +671,6 @@ class BikaApiRestService(object):
         del mirror['host']
         del mirror['username']
         del mirror['password']
-        del mirror['callback']
-
         return mirror
 
     def _outcome_creating(self, res, params):
@@ -707,4 +710,4 @@ class BikaApiRestService(object):
     def __str(self, txt):
         if isinstance(txt, (type(None),int,float)):
             txt = str(txt)
-        return txt.encode('Latin-1', 'ignore')
+        return txt.encode('latin-1', 'ignore')
