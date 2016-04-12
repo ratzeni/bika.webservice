@@ -256,6 +256,67 @@ class BikaApiRestService(object):
         return result
 
     @wrap_default
+    def get_lab_products(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.get_lab_products(params)
+        result = [dict(
+            id=self.__str(r['id']),
+            title=self.__str(r['title']),
+            description=self.__str(r['description']),
+            path=self.__str(r['path']),
+            creation_date=self.__str(r['creation_date']),
+            modification_date=self.__str(r['modification_date']),
+            expiration_date=self.__str(r['expirationDate']),
+            date=self.__str(r['Date']),
+            location=self.__str(r['location']),
+            rights=self.__str(r['rights']),
+            total_price=self.__str(r['TotalPrice']),
+            price=self.__str(r['Price']),
+            vat=self.__str(r['VAT']),
+            vat_amount=self.__str(r['VATAmount']),
+            unit=self.__str(r['Unit']),
+            volume=self.__str(r['Volume']),
+            review_state=self.__str(r['subject'][0]) if len(r['subject']) == 1 else '',
+            uid=self.__str(r['UID']),
+            creator=self.__str(r['Creator']),
+            transitions=[dict(id=self.__str(t['id']), title=self.__str(t['title'])) for t in r['transitions']],
+        ) for r in res['objects'] if 'bika_labproducts' not in self.__str(r['id'])]
+
+        return dict(objects=result, total=self.__str(res['total_objects']),
+                    first=self.__str(res['first_object_nr']), last=self.__str(res['last_object_nr']),
+                    success=self.__str(res['success']), error=self.__str(res['error']))
+
+        return result
+
+    @wrap_default
+    def get_storage_locations(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.get_storage_locations(params)
+        result = [dict(
+            id=self.__str(r['id']),
+            title=self.__str(r['title']),
+            description=self.__str(r['description']),
+            path=self.__str(r['path']),
+            creation_date=self.__str(r['creation_date']),
+            modification_date=self.__str(r['modification_date']),
+            date=self.__str(r['Date']),
+            location=self.__str(r['location']),
+            rights=self.__str(r['rights']),
+            review_state=self.__str(r['subject'][0]) if len(r['subject']) == 1 else '',
+            uid=self.__str(r['UID']),
+            creator=self.__str(r['Creator']),
+            transitions=[dict(id=self.__str(t['id']), title=self.__str(t['title'])) for t in r['transitions']],
+        ) for r in res['objects'] if 'bika_storagelocations' not in self.__str(r['id'])]
+
+        return dict(objects=result, total=self.__str(res['total_objects']),
+                    first=self.__str(res['first_object_nr']), last=self.__str(res['last_object_nr']),
+                    success=self.__str(res['success']), error=self.__str(res['error']))
+
+        return result
+
+    @wrap_default
     def get_artemplates(self):
         params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
@@ -357,6 +418,13 @@ class BikaApiRestService(object):
         params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.create_supply_order(self._format_params(params))
+        return self._outcome_creating(res, params)
+
+    @wrap_default
+    def create_lab_product(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.create_lab_product(self._format_params(params))
         return self._outcome_creating(res, params)
 
     @wrap_default
@@ -476,6 +544,20 @@ class BikaApiRestService(object):
         params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
         res = bika.dispatch_supply_order(self._format_params(params))
+        return self._outcome_action(res, params)
+
+    @wrap_default
+    def activate_lab_product(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.activate_lab_product(self._format_params(params))
+        return self._outcome_action(res, params)
+
+    @wrap_default
+    def deactivate_lab_product(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.deactivate_lab_product(self._format_params(params))
         return self._outcome_action(res, params)
 
     @wrap_default
@@ -614,6 +696,20 @@ class BikaApiRestService(object):
         res = bika.update_many(self._format_params(params))
         return self._outcome_update(res, params)
 
+    @wrap_default
+    def update_lab_product(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.update(self._format_params(params))
+        return self._outcome_update(res, params)
+
+    @wrap_default
+    def update_lab_products(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.update_many(self._format_params(params))
+        return self._outcome_update(res, params)
+
     def _get_analysis_requests(self, batch_id):
         params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
@@ -679,8 +775,10 @@ class BikaApiRestService(object):
             result = dict(success='True', obj_id=self.__str(res['obj_id']))
         elif 'ar_id' in res and 'sample_id' in res:
             result = dict(success='True', ar_id=self.__str(res['ar_id']), sample_id=self.__str(res['sample_id']))
-        elif 'message' in res:
+        elif 'message' in res and 'The following request fields were not used: [\'obj_id\'].  Request aborted.' not in self.__str(res['message']):
             result = dict(success='False', message=self.__str(res['message']))
+        elif 'message' in res and 'The following request fields were not used: [\'obj_id\'].  Request aborted.' in self.__str(res['message']):
+            result = dict(success='True', obj_id=self.__str(params['obj_id']))
 
         if not result:
             result = res

@@ -27,6 +27,8 @@ class BikaService(object):
         post('/bika/get/invoices')(bikaApi.get_invoices)
         post('/bika/get/price_list')(bikaApi.get_price_list)
         post('/bika/get/supply_orders')(bikaApi.get_supply_orders)
+        post('/bika/get/lab_products')(bikaApi.get_lab_products)
+        post('/bika/get/storage_locations')(bikaApi.get_storage_locations)
         post('/bika/get/artemplates')(bikaApi.get_artemplates)
         post('/bika/get/analysis_profiles')(bikaApi.get_analysis_profiles)
         post('/bika/get/analysis_services')(bikaApi.get_analysis_services)
@@ -48,6 +50,8 @@ class BikaService(object):
         post('/bika/update/worksheets')(bikaApi.update_worksheets)
         post('/bika/update/supply_order')(bikaApi.update_supply_order)
         post('/bika/update/supply_orders')(bikaApi.update_supply_orders)
+        post('/bika/update/lab_product')(bikaApi.update_lab_product)
+        post('/bika/update/lab_products')(bikaApi.update_lab_products)
 
         post('/bika/cancel/batch')(bikaApi.cancel_batch)
         post('/bika/cancel/worksheet')(bikaApi.update_worksheets)
@@ -67,11 +71,14 @@ class BikaService(object):
         post('/bika/action/activate_supply_order')(bikaApi.activate_supply_order)
         post('/bika/action/deactivate_supply_order')(bikaApi.deactivate_supply_order)
         post('/bika/action/dispatch_supply_order')(bikaApi.dispatch_supply_order)
+        post('/bika/action/activate_lab_product')(bikaApi.activate_lab_product)
+        post('/bika/action/deactivate_lab_product')(bikaApi.deactivate_lab_product)
 
         post('/bika/create/batch')(bikaApi.create_batch)
         post('/bika/create/analysis_request')(bikaApi.create_analysis_request)
         post('/bika/create/worksheet')(bikaApi.create_worksheet)
         post('/bika/create/supply_order')(bikaApi.create_supply_order)
+        post('/bika/create/lab_product')(bikaApi.create_lab_product)
 
         post('/bika/count/analysis_requests')(bikaApi.count_analysis_requests)
         post('/bika/count/samples')(bikaApi.count_samples)
@@ -101,7 +108,7 @@ def get_parser():
     parser = argparse.ArgumentParser('Run the Bika Lims HTTP server')
     parser.add_argument('--host', type=str, default='127.0.0.1',
                         help='web service binding host')
-    parser.add_argument('--port', type=int, default='8088',
+    parser.add_argument('--port', type=int,
                         help='web service binding port')
     parser.add_argument('--server', type=str, default='wsgiref',
                         help='server library (use paste for multi-threaded backend)')
