@@ -39,10 +39,10 @@ do_start()
 	#   0 if daemon has been started
 	#   1 if daemon was already running
 	#   2 if daemon could not be started
-	start-stop-daemon --start --quiet --pidfile $PID_FILE --exec $DAEMON --test > /dev/null \
+	start-stop-daemon --start --quiet --pidfile $PID_FILE_WRITE --exec $DAEMON --test > /dev/null \
 		|| return 1
-	start-stop-daemon --start --quiet --pidfile $PID_FILE --exec $DAEMON -- \
-		$DAEMON_ARGS \
+	start-stop-daemon --start --quiet --pidfile $PID_FILE_WRITE --exec $DAEMON -- \
+		$DAEMON_ARGS_WRITE \
 		|| return 2
 }
 
@@ -56,7 +56,7 @@ do_stop()
 	#   1 if daemon was already stopped
 	#   2 if daemon could not be stopped
 	#   other if a failure occurred
-	start-stop-daemon --stop --retry=TERM/30/KILL/5 --pidfile $PID_FILE
+	start-stop-daemon --stop --retry=TERM/30/KILL/5 --pidfile $PID_FILE_WRITE
 	RETVAL="$?"
 	[ "$RETVAL" = 2 ] && return 2
 	# Wait for children to finish too if this is a daemon that forks
@@ -68,7 +68,7 @@ do_stop()
 	start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 --exec $DAEMON
 	[ "$?" = 2 ] && return 2
 	# Many daemons don't delete their pidfiles when they exit.
-	rm -f $PID_FILE
+	rm -f $PID_FILE_WRITE
 	return "$RETVAL"
 }
 
@@ -92,7 +92,7 @@ case "$1" in
 	esac
 	;;
   status)
-	status_of_proc -p $PIDFILE "$DAEMON" "$NAME" && exit 0 || exit $?
+	status_of_proc -p $PID_FILE_WRITE "$DAEMON" "$NAME" && exit 0 || exit $?
 	;;
   restart)
 	log_daemon_msg "Restarting $DESC" "$NAME"
@@ -113,7 +113,7 @@ case "$1" in
 	esac
 	;;
   *)
-	echo "Usage: $SCRIPTNAME {start|stop|status|restart}" >&2
+	echo "Usage: $SCRIPTNAME_WRITE {start|stop|status|restart}" >&2
 	exit 3
 	;;
 esac

@@ -756,10 +756,16 @@ class BikaApiRestService(object):
 
     def _get_environmental_conditions(self, str_environmental_conditions):
         environmental_conditions = list()
-        for ec in str_environmental_conditions.split('|'):
-            items = ec.split('=')
-            if len(items) == 2:
-                environmental_conditions.append(dict(label=self.__str(items[0]), value=self.__str(items[1])))
+        if '=' in str_environmental_conditions:
+            for ec in str_environmental_conditions.split('|'):
+                items = ec.split('=')
+                if len(items) == 2:
+                    environmental_conditions.append(dict(label=self.__str(items[0]), value=self.__str(items[1])))
+        elif len(str_environmental_conditions.strip()) > 0:
+            for evc in json.loads(str_environmental_conditions):
+                for k,v in evc.iteritems():
+                    environmental_conditions.append(dict(label=self.__str(k), value=self.__str(v)))
+
         return  environmental_conditions
 
     def _format_params(self, params):
