@@ -68,6 +68,7 @@ class BikaService(object):
         post('/bika/action/submit')(bikaApi.submit)
         post('/bika/action/verify')(bikaApi.verify)
         post('/bika/action/publish')(bikaApi.publish)
+        post('/bika/action/republish')(bikaApi.republish)
         post('/bika/action/activate_supply_order')(bikaApi.activate_supply_order)
         post('/bika/action/deactivate_supply_order')(bikaApi.deactivate_supply_order)
         post('/bika/action/dispatch_supply_order')(bikaApi.dispatch_supply_order)

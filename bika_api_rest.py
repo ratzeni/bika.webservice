@@ -526,6 +526,13 @@ class BikaApiRestService(object):
         return self._outcome_action(res, params)
 
     @wrap_default
+    def republish(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.republish(self._format_params(params))
+        return self._outcome_action(res, params)
+
+    @wrap_default
     def activate_supply_order(self):
         params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
