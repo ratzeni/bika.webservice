@@ -63,6 +63,7 @@ class BikaApiRestService(object):
                                 userid=self.__str(r['userid']),
                                 fullname=self.__str(r['fullname']),
                                 role=role,
+                                is_clerk='True' if role=='LabClerk' else self.__str(self._is_clerk(user=r['fullname'])),
                             )
 
                             return dict(user=result,
@@ -716,6 +717,18 @@ class BikaApiRestService(object):
         bika = self._get_bika_instance(params)
         res = bika.update_many(self._format_params(params))
         return self._outcome_update(res, params)
+
+    def _is_clerk(self, user):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.get_clerk_users()
+
+        if 'users' in res:
+            for r in res['users']:
+                if user in r['fullname']:
+                    return True
+
+        return False
 
     def _get_analysis_requests(self, batch_id):
         params = self._get_params(request.forms)
