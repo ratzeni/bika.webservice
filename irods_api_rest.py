@@ -12,7 +12,24 @@ import csv
 class IrodsApiRestService(object):
     def __init__(self):
         self.metadata = dict(
-            samplesheet=['run', 'fcid', 'read1_cycles', 'read2_cycles', 'index1_cycles', 'index2_cycles', 'is_rapid']
+            samplesheet=[
+                'run',
+                'fcid',
+                'read1_cycles',
+                'read2_cycles',
+                'index1_cycles',
+                'index2_cycles',
+                'is_rapid',
+                'date',
+                'scanner_id',
+                'scanner_nickname',
+                'pe_kit',
+                'sbs_kit',
+                'index_kit',
+                'pe_id',
+                'sbs_id',
+                'index_id',
+            ]
         )
         pass
 
@@ -169,12 +186,13 @@ class IrodsApiRestService(object):
                         scanner_number=list(root.iter('ScannerNumber')).pop(0).text if len(
                             list(root.iter('ScannerNumber'))) else '',
                     ),
-                    reads=dict(
-                        read1=list(root.iter('Read1')).pop(0).text if len(list(root.iter('Read1'))) else '',
-                        read2=list(root.iter('Read2')).pop(0).text if len(list(root.iter('Read2'))) else '',
-                        index1=list(root.iter('IndexRead1')).pop(0).text if len(list(root.iter('IndexRead1'))) else '',
-                        index2=list(root.iter('IndexRead2')).pop(0).text if len(list(root.iter('IndexRead2'))) else '',
-                    ),
+                    # reads=dict(
+                    #     read1=list(root.iter('Read1')).pop(0).text if len(list(root.iter('Read1'))) else '',
+                    #     read2=list(root.iter('Read2')).pop(0).text if len(list(root.iter('Read2'))) else '',
+                    #     index1=list(root.iter('IndexRead1')).pop(0).text if len(list(root.iter('IndexRead1'))) else '',
+                    #     index2=list(root.iter('IndexRead2')).pop(0).text if len(list(root.iter('IndexRead2'))) else '',
+                    # ),
+                    reads=[r.attrib for r in root.iter('Read')],
                     reagents=dict(
                         sbs=dict(
                             kit=list(root.iter('Sbs')).pop(0).text if len(list(root.iter('Sbs'))) else '',
@@ -258,7 +276,7 @@ class IrodsApiRestService(object):
                                            params.get('local_path'),
                                            params.get('irods_path')),
 
-            iset_attr="imeta set -d {} {} {}".format(params.get('irods_path'),
+            iset_attr="imeta set -d {} '{}' '{}'".format(params.get('irods_path'),
                                                      params.get('attr_name'),
                                                      params.get('attr_value'))
         )
