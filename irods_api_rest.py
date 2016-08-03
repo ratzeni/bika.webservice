@@ -1,3 +1,4 @@
+
 from functools import wraps
 from bottle import post, get, run, response, request
 
@@ -7,6 +8,7 @@ import subprocess
 import json
 from tempfile import NamedTemporaryFile
 import csv
+from alta.objectstore import build_object_store
 
 
 class IrodsApiRestService(object):
@@ -91,7 +93,10 @@ class IrodsApiRestService(object):
 
     @wrap_default
     def put_samplesheet(self):
+
         params = self._get_params(request.forms)
+
+        # creating samplesheet file
         samplesheet = json.loads(params.get('samplesheet'))
         f = NamedTemporaryFile(delete=False)
 
@@ -100,54 +105,86 @@ class IrodsApiRestService(object):
             writer.writerows(samplesheet)
 
         local_path = f.name
-        dest_path = os.path.join(params.get('tmp_folder'), os.path.basename(local_path))
 
-        res = self._scp_cmd(user=params.get('user'),
-                            host=params.get('host'),
-                            local_path=local_path,
-                            dest_path=dest_path)
+        # creating run_dir collection
+        rundir_collection = os.path.join(params.get('samplesheet_collection'),params.get('illumina_run_directory'))
+        params.update(dict(collection=rundir_collection))
 
-        result = []
+        res = self._imkdir(params)
 
         if 'success' in res and res.get('success') in "True":
 
-            params.update(dict(local_path=dest_path,
-                               irods_path=os.path.join(params.get('samplesheet_collection'),
-                                                       "{}.csv".format(params.get('illumina_run_directory')))))
+            params.update(dict(local_path=local_path,
+                               irods_path=os.path.join(rundir_collection,"SampleSheet.csv")))
 
             res = self._iput(params=params)
 
             if 'success' in res and res.get('success') in "True":
-
                 for key in self.metadata.get('samplesheet', list()):
                     params.update(dict(attr_name=key,
                                        attr_value=str(params.get(key, ''))))
-
-                    res = self._iset_attr(params=params)
-
-                result = res.get('result')
+                    self._iset_attr(params=params)
 
         f.close()
         if os.path.exists(local_path):
             os.remove(local_path)
 
-        return dict(objects=result, success=res.get('success'), error=res.get('error'))
+        return dict(objects=res.get('result'), success=res.get('success'), error=res.get('error'))
+
+    def _get_irods_conf(self, params):
+        return dict(host=params.get('irods_host'),
+                    port=params.get('irods_port'),
+                    user=params.get('irods_user'),
+                    password=params.get('irods_password').encode('ascii'),
+                    zone=params.get('irods_zone'))
+
+    def _iinit(self, params):
+        ir_conf = self._get_irods_conf(params)
+        ir = build_object_store(store='irods',
+                                host=ir_conf['host'],
+                                port=ir_conf['port'],
+                                user=ir_conf['user'],
+                                password=ir_conf['password'].encode('ascii'),
+                                zone=ir_conf['zone'])
+        return ir
+
+    def _imkdir(self, params):
+        try:
+            ir = self._iinit(params)
+            collection = ir.create_object(dest_path=params.get('collection'), collection=True)
+
+            if collection and collection.path and len(collection.path)>0:
+                res = dict(success='True', error=[], result=dict(name=collection.name, path=collection.path))
+            else:
+                res = dict(success='False', error=[], result=[])
+        except:
+            res = dict(success='False', error=[], result=[])
+
+        #res = dict(success='True', error=[], result=dict(name=collection.name, path=collection.path))
+        return res
 
     def _iput(self, params):
-        cmd = 'iput'
-        res = self._ssh_cmd(user=params.get('user'),
-                            host=params.get('host'),
-                            cmd=self._get_icmd(cmd=cmd, params=params))
+        try:
+            ir = self._iinit(params)
+            ir.put_object(source_path=params.get('local_path'), dest_path=params.get('irods_path'))
+            obj = ir.get_object(params.get('irods_path'))
 
+            if obj and obj.path and len(obj.path) > 0:
+                res = dict(success='True', error=[], result=dict(name=obj.name, path=obj.path))
+            else:
+                res = dict(success='False', error=[], result=[])
+        except:
+            res = dict(success='False', error=[], result=[])
+        #res = dict(success='True', error=[], result=dict(name=obj.name, path=obj.path))
         return res
 
     def _iset_attr(self, params):
-        cmd = 'iset_attr'
-        res = self._ssh_cmd(user=params.get('user'),
-                            host=params.get('host'),
-                            cmd=self._get_icmd(cmd=cmd, params=params))
-
-        return res
+        try:
+            ir = self._iinit(params)
+            if params.get('attr_name') and len(params.get('attr_name'))>0:
+                ir.add_object_metadata(path=params.get('irods_path'), meta=(params.get('attr_name'),params.get('attr_value')))
+        except:
+            pass
 
     def _get_run_info(self, params, run):
 
