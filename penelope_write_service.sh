@@ -14,7 +14,8 @@
 
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-. ./init.cfg
+SCRIPT_PATH="$(dirname "$(readlink -n "$0")")"
+. $SCRIPT_PATH/init.cfg
 
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 0
