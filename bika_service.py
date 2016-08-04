@@ -88,21 +88,18 @@ class BikaService(object):
         post('/irods/put/samplesheet')(irodsApi.put_samplesheet)
 
         # check status
-        post('/check/status')(self.test_server)
+        get('/check/status')(self.test_server)
         post('/bika/check/status')(bikaApi.test_server)
         post('/irods/check/status')(irodsApi.test_server)
 
-
     def test_server(self):
         return json.dumps({'status':'Server running'})
-
 
     def start_service(self, host, port, logfile, pidfile, server, debug=False):
         log = open(logfile, 'a')
         pid =PIDLockFile(pidfile)
         with daemon.DaemonContext(stderr=log, pidfile=pid):
             run(host=host, port=port, server=server)
-
 
 
 def get_parser():

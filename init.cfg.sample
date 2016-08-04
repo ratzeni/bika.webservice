@@ -17,5 +17,5 @@ SERVER_WRITE=DUMMY_SERVER_WRITE
 DAEMON_ARGS_READ=" --host $HOST --port $PORT_READ --server $SERVER_READ --pid-file $PID_FILE_READ --log-file $LOG_FILE_READ"
 DAEMON_ARGS_WRITE=" --host $HOST --port $PORT_WRITE --server $SERVER_WRITE --pid-file $PID_FILE_WRITE --log-file $LOG_FILE_WRITE"
 
-SCRIPTNAME_READ=/etc/init.d/penelope_read_service
-SCRIPTNAME_WRITE=/etc/init.d/penelope_write_service
+SCRIPTNAME_READ=$SERVICE_DIR/penelope_read_service.sh
+SCRIPTNAME_WRITE=$SERVICE_DIR/penelope_write_service.sh
