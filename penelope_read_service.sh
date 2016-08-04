@@ -14,7 +14,7 @@
 
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-SCRIPT_PATH="$(dirname "$(readlink -n "$0")")"
+SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
 . $SCRIPT_PATH/init.cfg
 
 # Exit if the package is not installed
