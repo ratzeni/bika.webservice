@@ -129,7 +129,27 @@ class IrodsApiRestService(object):
         if os.path.exists(local_path):
             os.remove(local_path)
 
+        self._put_run_files(params=params, source_file=params.get('run_info_file'))
+        self._put_run_files(params=params, source_file=params.get('run_parameters_file'))
+
         return dict(objects=res.get('result'), success=res.get('success'), error=res.get('error'))
+
+    def _put_run_files(self, params, source_file):
+            tmpf = NamedTemporaryFile(delete=False)
+            res = self._scp_cmd(user=params.get('user'),
+                                host=params.get('host'),
+                                local_path=tmpf.name,
+                                remote_path=os.path.join(params.get('root_path'),params.get('illumina_run_directory'), source_file),
+                                direction='remote2path')
+
+            if 'success' in res and res.get('success') in "True":
+                params.update(local_path=tmpf.name,irods_path=os.path.join(params.get('collection'),source_file))
+                res = self._iput(params=params)
+
+            tmpf.close()
+            if os.path.exists(tmpf.name):
+                os.remove(tmpf.name)
+            return res
 
     def _get_irods_conf(self, params):
         return dict(host=params.get('irods_host'),
@@ -262,20 +282,24 @@ class IrodsApiRestService(object):
 
         return _run_parameters_parser(res)
 
-    def _scp_cmd(self, user, host, local_path, dest_path):
-        remote = "{}@{}:{}".format(user, host, dest_path)
-        ssh = subprocess.Popen(["scp", local_path, remote],
-                               shell=False,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
+    def _scp_cmd(self, user, host, local_path, remote_path, direction='local2remote'):
+        remote_path = "{}@{}:{}".format(user, host, remote_path)
+
+        if 'local2remote' not in direction:
+            local_path, remote_path = remote_path, local_path
+
+        ssh = subprocess.Popen(["scp", local_path, remote_path],
+                                shell=False,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
 
         result = [line.rstrip('\n') for line in ssh.stdout.readlines()]
         error = ssh.stderr.readlines()
 
         if error:
-            result = dict(success='False', error=error, result=[])
+            result = dict(success='False', error=error, result=[],  remote_path=remote_path, local_path=local_path)
         else:
-            result = dict(success='True', error=[], result=result)
+            result = dict(success='True', error=[], result=result, remote_path=remote_path, local_path=local_path)
 
         return result
 
