@@ -8,6 +8,7 @@ import subprocess
 import json
 from tempfile import NamedTemporaryFile
 import csv
+import uuid
 from alta.objectstore import build_object_store
 
 
@@ -135,8 +136,8 @@ class IrodsApiRestService(object):
         return dict(objects=res.get('result'), success=res.get('success'), error=res.get('error'))
 
     def _put_run_files(self, params, source_file):
-            tmpf = NamedTemporaryFile(dir=os.path.expanduser(params.get('tmp_folder')), delete=True)
-            local_path = tmpf.name
+
+            local_path = os.path.join(os.path.expanduser(params.get('tmp_folder')), str(uuid.uuid4()))
             res = self._scp_cmd(user=params.get('user'),
                                 host=params.get('host'),
                                 local_path=local_path,
@@ -145,10 +146,9 @@ class IrodsApiRestService(object):
                                 direction='remote2local')
 
             if 'success' in res and res.get('success') in "True":
-                params.update(local_path=local_path, irods_path=os.path.join(params.get('collection'),source_file))
+                params.update(local_path=local_path, irods_path=os.path.join(params.get('collection'), source_file))
                 res = self._iput(params=params)
 
-            tmpf.close()
             if os.path.exists(local_path):
                 os.remove(local_path)
             return res
