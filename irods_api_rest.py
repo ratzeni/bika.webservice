@@ -135,7 +135,7 @@ class IrodsApiRestService(object):
         return dict(objects=res.get('result'), success=res.get('success'), error=res.get('error'))
 
     def _put_run_files(self, params, source_file):
-            tmpf = NamedTemporaryFile(dir=params.get('tmp_folder'), delete=False)
+            tmpf = NamedTemporaryFile(dir=os.path.expanduser(params.get('tmp_folder')), delete=True)
             local_path = tmpf.name
             res = self._scp_cmd(user=params.get('user'),
                                 host=params.get('host'),
