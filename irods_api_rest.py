@@ -245,12 +245,7 @@ class IrodsApiRestService(object):
                         scanner_number=list(root.iter('ScannerNumber')).pop(0).text if len(
                             list(root.iter('ScannerNumber'))) else '',
                     ),
-                    # reads=dict(
-                    #     read1=list(root.iter('Read1')).pop(0).text if len(list(root.iter('Read1'))) else '',
-                    #     read2=list(root.iter('Read2')).pop(0).text if len(list(root.iter('Read2'))) else '',
-                    #     index1=list(root.iter('IndexRead1')).pop(0).text if len(list(root.iter('IndexRead1'))) else '',
-                    #     index2=list(root.iter('IndexRead2')).pop(0).text if len(list(root.iter('IndexRead2'))) else '',
-                    # ),
+
                     reads=[r.attrib for r in root.iter('Read')],
                     reagents=dict(
                         sbs=dict(
