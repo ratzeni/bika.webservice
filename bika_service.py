@@ -88,7 +88,7 @@ class BikaService(object):
         post('/irods/put/samplesheet')(irodsApi.put_samplesheet)
 
         # check status
-        get('/check/status')(self.test_server)
+        post('/web/check/status')(self.test_server)
         post('/bika/check/status')(bikaApi.test_server)
         post('/irods/check/status')(irodsApi.test_server)
 

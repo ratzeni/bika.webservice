@@ -37,7 +37,6 @@ class BikaApiRestService(object):
             if not res or len(res) == 0:
                 return None
             else:
-
                 return inst._success(res)
         return wrapper
 
