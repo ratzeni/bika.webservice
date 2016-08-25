@@ -129,26 +129,28 @@ class IrodsApiRestService(object):
         if os.path.exists(local_path):
             os.remove(local_path)
 
-        self._put_run_files(params=params, source_file=params.get('run_info_file'))
-        self._put_run_files(params=params, source_file=params.get('run_parameters_file'))
+        res = self._put_run_files(params=params, source_file=params.get('run_info_file'))
+        res = self._put_run_files(params=params, source_file=params.get('run_parameters_file'))
 
         return dict(objects=res.get('result'), success=res.get('success'), error=res.get('error'))
 
     def _put_run_files(self, params, source_file):
-            tmpf = NamedTemporaryFile(delete=False)
+            tmpf = NamedTemporaryFile(dir=params.get('tmp_folder'), delete=False)
+            local_path = tmpf.name
             res = self._scp_cmd(user=params.get('user'),
                                 host=params.get('host'),
-                                local_path=tmpf.name,
-                                remote_path=os.path.join(params.get('root_path'),params.get('illumina_run_directory'), source_file),
-                                direction='remote2path')
+                                local_path=local_path,
+                                remote_path=os.path.join(params.get('root_path'), params.get('illumina_run_directory'),
+                                                         source_file),
+                                direction='remote2local')
 
             if 'success' in res and res.get('success') in "True":
-                params.update(local_path=tmpf.name,irods_path=os.path.join(params.get('collection'),source_file))
+                params.update(local_path=local_path, irods_path=os.path.join(params.get('collection'),source_file))
                 res = self._iput(params=params)
 
             tmpf.close()
-            if os.path.exists(tmpf.name):
-                os.remove(tmpf.name)
+            if os.path.exists(local_path):
+                os.remove(local_path)
             return res
 
     def _get_irods_conf(self, params):
