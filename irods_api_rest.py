@@ -137,20 +137,24 @@ class IrodsApiRestService(object):
 
     def _put_run_files(self, params, source_file):
 
-            local_path = os.path.join(os.path.expanduser(params.get('tmp_folder')), str(uuid.uuid4()))
-            res = self._scp_cmd(user=params.get('user'),
+            cmd = 'cat_run_xml_file'
+            params.update(dict(run_xml_file=source_file))
+            res = self._ssh_cmd(user=params.get('user'),
                                 host=params.get('host'),
-                                local_path=local_path,
-                                remote_path=os.path.join(params.get('root_path'), params.get('illumina_run_directory'),
-                                                         source_file),
-                                direction='remote2local')
+                                cmd=self._get_icmd(cmd=cmd, params=params))
 
-            if 'success' in res and res.get('success') in "True":
+            if 'success' in res and res.get('success') in "True" and len(res['result']) > 0:
+                tmpf = NamedTemporaryFile(delete=False)
+
+                with tmpf:
+                    tmpf.write(res['result'])
+
+                local_path = tmpf.name
                 params.update(local_path=local_path, irods_path=os.path.join(params.get('collection'), source_file))
                 res = self._iput(params=params)
 
-            if os.path.exists(local_path):
-                os.remove(local_path)
+            # if os.path.exists(local_path):
+            #     os.remove(local_path)
             return res
 
     def _get_irods_conf(self, params):
@@ -336,7 +340,12 @@ class IrodsApiRestService(object):
 
             iset_attr="imeta set -d {} '{}' '{}'".format(params.get('irods_path'),
                                                      params.get('attr_name'),
-                                                     params.get('attr_value'))
+                                                     params.get('attr_value')),
+
+            cat_run_xml_file="cat {}".format(os.path.join(params.get('root_path'),
+                                                                 params.get('illumina_run_directory'),
+                                                                 params.get('run_xml_file')),
+
         )
 
         return icmds.get(cmd)
