@@ -73,6 +73,7 @@ class IrodsApiRestService(object):
         result = list()
         for this_run_folder in params.get('run_folders'):
                 params.update(dict(run_folder=this_run_folder))
+                params.update(dict(run_xml_file='dummy'))
                 res = self._ssh_cmd(user=params.get('user'),
                                     host=params.get('host'),
                                     cmd=self._get_icmd(cmd=cmd, params=params))
@@ -147,7 +148,7 @@ class IrodsApiRestService(object):
                 tmpf = NamedTemporaryFile(delete=False)
 
                 with tmpf:
-                    tmpf.write(res['result'])
+                    tmpf.writelines(res['result'])
 
                 local_path = tmpf.name
                 params.update(local_path=local_path, irods_path=os.path.join(params.get('collection'), source_file))
@@ -186,7 +187,6 @@ class IrodsApiRestService(object):
         except:
             res = dict(success='False', error=[], result=[])
 
-        #res = dict(success='True', error=[], result=dict(name=collection.name, path=collection.path))
         return res
 
     def _iput(self, params):
@@ -201,7 +201,7 @@ class IrodsApiRestService(object):
                 res = dict(success='False', error=[], result=[])
         except:
             res = dict(success='False', error=[], result=[])
-        #res = dict(success='True', error=[], result=dict(name=obj.name, path=obj.path))
+
         return res
 
     def _iset_attr(self, params):
@@ -283,27 +283,6 @@ class IrodsApiRestService(object):
 
         return _run_parameters_parser(res)
 
-    def _scp_cmd(self, user, host, local_path, remote_path, direction='local2remote'):
-        remote_path = "{}@{}:{}".format(user, host, remote_path)
-
-        if 'local2remote' not in direction:
-            local_path, remote_path = remote_path, local_path
-
-        ssh = subprocess.Popen(["scp", local_path, remote_path],
-                                shell=False,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-
-        result = [line.rstrip('\n') for line in ssh.stdout.readlines()]
-        error = ssh.stderr.readlines()
-
-        if error:
-            result = dict(success='False', error=error, result=[],  remote_path=remote_path, local_path=local_path)
-        else:
-            result = dict(success='True', error=[], result=result, remote_path=remote_path, local_path=local_path)
-
-        return result
-
     def _ssh_cmd(self, user, host, cmd):
         remote = "{}@{}".format(user, host)
         ssh = subprocess.Popen(["ssh", remote, cmd],
@@ -342,10 +321,9 @@ class IrodsApiRestService(object):
                                                      params.get('attr_name'),
                                                      params.get('attr_value')),
 
-            cat_run_xml_file="cat {}".format(os.path.join(params.get('root_path'),
-                                                                 params.get('illumina_run_directory'),
-                                                                 params.get('run_xml_file')),
-
+            cat_run_xml_file="cat {}".format(os.path.join(params.get('root_path',''),
+                                                          params.get('illumina_run_directory', ''),
+                                                          params.get('run_xml_file', ''))),
         )
 
         return icmds.get(cmd)
