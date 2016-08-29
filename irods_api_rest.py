@@ -139,6 +139,11 @@ class IrodsApiRestService(object):
     def _put_run_files(self, params, source_file):
 
             cmd = 'cat_run_xml_file'
+            try:
+                del params['run_xml_file']
+            except KeyError:
+                pass
+
             params.update(dict(run_xml_file=source_file))
             res = self._ssh_cmd(user=params.get('user'),
                                 host=params.get('host'),
@@ -151,6 +156,11 @@ class IrodsApiRestService(object):
                     tmpf.writelines(res['result'])
 
                 local_path = tmpf.name
+                try:
+                    del params['local_path']
+                    del params['irods_path']
+                except KeyError:
+                    pass
                 params.update(dict(local_path=local_path,
                                    irods_path=os.path.join(params.get('collection'), source_file)))
                 res = self._iput(params=params)
