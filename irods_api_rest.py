@@ -151,7 +151,8 @@ class IrodsApiRestService(object):
                     tmpf.writelines(res['result'])
 
                 local_path = tmpf.name
-                params.update(local_path=local_path, irods_path=os.path.join(params.get('collection'), source_file))
+                params.update(dict(local_path=local_path,
+                                   irods_path=os.path.join(params.get('collection'), source_file)))
                 res = self._iput(params=params)
 
             # if os.path.exists(local_path):
