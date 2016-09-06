@@ -165,8 +165,9 @@ class IrodsApiRestService(object):
                                    irods_path=os.path.join(params.get('collection'), source_file)))
                 res = self._iput(params=params)
 
-            # if os.path.exists(local_path):
-            #     os.remove(local_path)
+                if os.path.exists(local_path):
+                    os.remove(local_path)
+
             return res
 
     def _get_irods_conf(self, params):
