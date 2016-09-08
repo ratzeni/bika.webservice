@@ -15,7 +15,7 @@ from alta.objectstore import build_object_store
 class IrodsApiRestService(object):
     def __init__(self):
         self.metadata = dict(
-            samplesheet=[
+            rundir_collection=[
                 'run',
                 'fcid',
                 'read1_cycles',
@@ -117,58 +117,23 @@ class IrodsApiRestService(object):
         if 'success' in res and res.get('success') in "True":
 
             params.update(dict(local_path=local_path,
-                               irods_path=os.path.join(rundir_collection,"SampleSheet.csv")))
+                               irods_path=os.path.join(rundir_collection, "SampleSheet.csv")))
 
             res = self._iput(params=params)
 
             if 'success' in res and res.get('success') in "True":
-                for key in self.metadata.get('samplesheet', list()):
+                for key in self.metadata.get('rundir_collection', list()):
                     params.update(dict(attr_name=key,
-                                       attr_value=str(params.get(key, ''))))
-                    self._iset_attr(params=params)
+                                       attr_value=str(params.get(key, '')),
+                                       irods_path=rundir_collection)
+                                  )
 
+                    self._iset_attr(params=params)
         f.close()
         if os.path.exists(local_path):
             os.remove(local_path)
 
-        res = self._put_run_files(params=params, source_file=params.get('run_info_file'))
-        res = self._put_run_files(params=params, source_file=params.get('run_parameters_file'))
-
         return dict(objects=res.get('result'), success=res.get('success'), error=res.get('error'))
-
-    def _put_run_files(self, params, source_file):
-
-            cmd = 'cat_run_xml_file'
-            try:
-                del params['run_xml_file']
-            except KeyError:
-                pass
-
-            params.update(dict(run_xml_file=source_file))
-            res = self._ssh_cmd(user=params.get('user'),
-                                host=params.get('host'),
-                                cmd=self._get_icmd(cmd=cmd, params=params))
-
-            if 'success' in res and res.get('success') in "True" and len(res['result']) > 0:
-                tmpf = NamedTemporaryFile(delete=False)
-
-                with tmpf:
-                    tmpf.writelines(res['result'])
-
-                local_path = tmpf.name
-                try:
-                    del params['local_path']
-                    del params['irods_path']
-                except KeyError:
-                    pass
-                params.update(dict(local_path=local_path,
-                                   irods_path=os.path.join(params.get('collection'), source_file)))
-                res = self._iput(params=params)
-
-                if os.path.exists(local_path):
-                    os.remove(local_path)
-
-            return res
 
     def _get_irods_conf(self, params):
         return dict(host=params.get('irods_host'),
@@ -219,8 +184,11 @@ class IrodsApiRestService(object):
     def _iset_attr(self, params):
         try:
             ir = self._iinit(params)
-            if params.get('attr_name') and len(params.get('attr_name'))>0:
-                ir.add_object_metadata(path=params.get('irods_path'), meta=(params.get('attr_name'),params.get('attr_value')))
+            if params.get('attr_name') and len(params.get('attr_name')) > 0:
+
+                ir.add_object_metadata(path=params.get('irods_path'),
+                                       meta=(params.get('attr_name'),
+                                             params.get('attr_value') if len(params.get('attr_value')) > 0 else None))
         except:
             pass
 
@@ -325,17 +293,6 @@ class IrodsApiRestService(object):
                                                             params.get('this_run', ''),
                                                             params.get('run_parameters_file', ''))),
 
-            iput="iput -R {} {} {}".format(params.get('irods_resource'),
-                                           params.get('local_path'),
-                                           params.get('irods_path')),
-
-            iset_attr="imeta set -d {} '{}' '{}'".format(params.get('irods_path'),
-                                                     params.get('attr_name'),
-                                                     params.get('attr_value')),
-
-            cat_run_xml_file="cat {}".format(os.path.join(params.get('root_path',''),
-                                                          params.get('illumina_run_directory', ''),
-                                                          params.get('run_xml_file', ''))),
         )
 
         return icmds.get(cmd)
