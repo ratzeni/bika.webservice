@@ -85,7 +85,10 @@ class BikaService(object):
         post('/bika/count/samples')(bikaApi.count_samples)
 
         post('/irods/get/running')(irodsApi.get_running_folders)
+        post('/irods/get/runs')(irodsApi.get_runs)
+        post('/irods/check/runs')(irodsApi.check_runs)
         post('/irods/put/samplesheet')(irodsApi.put_samplesheet)
+        post('/irods/get/samplesheet')(irodsApi.get_samplesheet)
 
         # check status
         post('/web/check/status')(self.test_server)

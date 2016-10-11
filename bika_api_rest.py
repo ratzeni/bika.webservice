@@ -140,8 +140,9 @@ class BikaApiRestService(object):
                 params=self._get_environmental_conditions(r['EnvironmentalConditions']),
                 creator=self.__str(r['Creator']),
                 analyses=self._get_analyses(r['Analyses']),
+                runs=self._get_runs_ar(r['Sampler']),
                 transitions=[dict(id=self.__str(t['id']), title=self.__str(t['title'])) for t in r['transitions']],
-                )for r in res['objects']]
+                ) for r in res['objects']]
 
         return dict(objects=result, total=self.__str(res['total_objects']),
                     first=self.__str(res['first_object_nr']), last=self.__str(res['last_object_nr']),
@@ -786,6 +787,14 @@ class BikaApiRestService(object):
                     environmental_conditions.append(dict(label=self.__str(k), value=self.__str(v)))
 
         return  environmental_conditions
+
+    def _get_runs_ar(self, str_runs):
+        runs = list()
+        if isinstance(str_runs, list):
+            return str_runs
+        elif len(str_runs.strip()) > 0:
+            return json.loads(str_runs)
+        return runs
 
     def _format_params(self, params):
         mirror = dict(params)

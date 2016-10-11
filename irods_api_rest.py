@@ -9,11 +9,13 @@ import json
 from tempfile import NamedTemporaryFile
 import csv
 import uuid
+import ast
 from alta.objectstore import build_object_store
 
 
 class IrodsApiRestService(object):
     def __init__(self):
+
         self.metadata = dict(
             rundir_collection=[
                 'run',
@@ -34,6 +36,13 @@ class IrodsApiRestService(object):
                 'index_id',
             ]
         )
+        self.positive_labels = ['finished', "ownership ok",
+                                'SampleSheet found', 'Barcodes have the same size',
+                                'Metadata found']
+
+        self.negative_labels = ['running ', "waiting for ownership's modification",
+                                'SampleSheet not found',"Barcodes don't have the same size",
+                                'Metadata not found']
         pass
 
     def _success(self, body, return_code=200):
@@ -67,13 +76,82 @@ class IrodsApiRestService(object):
         return '{0}({1})'.format(callback, {'result': status})
 
     @wrap_default
+    def get_runs(self):
+        params = self._get_params(request.forms)
+        rundir_collection = params.get('samplesheet_collection')
+        params.update(dict(irods_path=rundir_collection))
+        res = self._ils(params, delivery=True)
+
+        if params.get('rd_label'):
+            runs = [r for r in res['result'] if r.name in [params.get('rd_label')]]
+            total, last = 1, 1
+        else:
+            runs, total, last = self._pagination(data=sorted(res['result'], key=lambda k: k.name, reverse=True),
+                                                 page_nr=params.get('page_nr'),
+                                                 page_size=params.get('page_size'))
+
+        cmd = 'get_report_folders'
+        reports = self._ssh_cmd(user=params.get('user'),
+                                host=params.get('host'),
+                                cmd=self._get_icmd(cmd=cmd, params=params))
+
+        result = [dict(
+            path=str(r.path),
+            run=str(r.name),
+            metadata=self.__get_metadata(irods_obj=r),
+            files=[str(f.name) for f in r.data_objects],
+            report_path=os.path.join(params.get('report_host'), r.name) if r.name in reports['result'] else '',
+        ) for r in runs]
+
+        return dict(objects=result, total=total, last=last, success=res.get('success'), error=res.get('error'))
+
+    @wrap_default
+    def get_samplesheet(self):
+        params = self._get_params(request.forms)
+
+        rundir_collection = params.get('samplesheet_collection')
+        rundir = params.get('run')
+        ipath = params.get('path')
+        irods_path = os.path.join(ipath, "SampleSheet.csv") if ipath else os.path.join(rundir_collection, rundir, "SampleSheet.csv")
+        params.update(dict(irods_path=irods_path))
+
+        res = self._iget(params)
+        samplesheet = [l.split(',') for l in res.get('result')]
+        return dict(objects=samplesheet, success=res.get('success'), error=res.get('error'))
+
+    @wrap_default
+    def check_runs(self):
+        params = self._get_params(request.forms)
+        cmd = 'check_runs'
+        res = self._ssh_cmd(user=params.get('user'),
+                            host=params.get('host'),
+                            cmd=self._get_icmd(cmd=cmd, params=params),
+                            switch=True)
+        result = list()
+        indices = [i for i, s in enumerate(res['result']) if 'Rundir' in s]
+        for i in indices:
+            rundir = res['result'][i].split('|')[3].split(' ')[1]
+            check_res = res['result'][i + 1].split('|')[3]
+            check_res = ast.literal_eval(check_res)
+            result.extend([dict(
+                run=self.__str(rundir),
+                status=check_res[0],
+                ownership=check_res[1],
+                samplesheet=check_res[2],
+                barcodes=check_res[3],
+                metadata=check_res[4],
+                ready="True" if set(check_res) == set(self.positive_labels) else "False",
+            )])
+
+        return dict(objects=result, success=res.get('success'), error=res.get('error'))
+
+    @wrap_default
     def get_running_folders(self):
         params = self._get_params(request.forms)
         cmd = 'get_running_folders'
         result = list()
         for this_run_folder in params.get('run_folders'):
                 params.update(dict(run_folder=this_run_folder))
-                params.update(dict(run_xml_file='dummy'))
                 res = self._ssh_cmd(user=params.get('user'),
                                     host=params.get('host'),
                                     cmd=self._get_icmd(cmd=cmd, params=params))
@@ -86,10 +164,11 @@ class IrodsApiRestService(object):
                     run_parameters=self._get_run_parameters(params=params,
                                                             run=str(r)),
                 ) for r in res['result']])
-
-        result.append(dict(
-            running_folder='MISSING RUN FOLDER',
-            run_info=dict()))
+        if len(result) == 0:
+            result.append(dict(
+                running_folder='MISSING RUN FOLDER',
+                run_info=dict(),
+                run_parameters=dict()))
 
         return dict(objects=result, success=res.get('success'), error=res.get('error'))
 
@@ -109,7 +188,8 @@ class IrodsApiRestService(object):
         local_path = f.name
 
         # creating run_dir collection
-        rundir_collection = os.path.join(params.get('samplesheet_collection'),params.get('illumina_run_directory'))
+        rundir_collection = os.path.join(params.get('samplesheet_collection'),
+                                         params.get('illumina_run_directory'))
         params.update(dict(collection=rundir_collection))
 
         res = self._imkdir(params)
@@ -144,6 +224,7 @@ class IrodsApiRestService(object):
 
     def _iinit(self, params):
         ir_conf = self._get_irods_conf(params)
+
         ir = build_object_store(store='irods',
                                 host=ir_conf['host'],
                                 port=ir_conf['port'],
@@ -152,10 +233,31 @@ class IrodsApiRestService(object):
                                 zone=ir_conf['zone'])
         return ir
 
+    def _iexit(self, irods_session):
+        try:
+            irods_session.sess.cleanup()
+        except:
+            pass
+
+    def _ils(self, params, delivery=True):
+
+        try:
+            ir = self._iinit(params)
+            irods_path = params.get('irods_path')
+            exists, iobj = ir.exists(irods_path, delivery=True)
+            ir.sess.cleanup()
+            if exists:
+                data_objects = [d for d in iobj.data_objects] if delivery else [d for d in iobj.data_objects]
+                data_objects.extend([d for d in iobj.subcollections] if delivery else [d for d in iobj.subcollections])
+                return dict(success='True', error=[], result=data_objects)
+        except:
+            return dict(success='False', error=[], result=[])
+
     def _imkdir(self, params):
         try:
             ir = self._iinit(params)
             collection = ir.create_object(dest_path=params.get('collection'), collection=True)
+            ir.sess.cleanup()
 
             if collection and collection.path and len(collection.path)>0:
                 res = dict(success='True', error=[], result=dict(name=collection.name, path=collection.path))
@@ -171,9 +273,26 @@ class IrodsApiRestService(object):
             ir = self._iinit(params)
             ir.put_object(source_path=params.get('local_path'), dest_path=params.get('irods_path'))
             obj = ir.get_object(params.get('irods_path'))
+            ir.sess.cleanup()
 
             if obj and obj.path and len(obj.path) > 0:
                 res = dict(success='True', error=[], result=dict(name=obj.name, path=obj.path))
+            else:
+                res = dict(success='False', error=[], result=[])
+        except:
+            res = dict(success='False', error=[], result=[])
+
+        return res
+
+    def _iget(self, params):
+        try:
+            ir = self._iinit(params)
+            exists, iobj = ir.exists(params.get('irods_path'), delivery=True)
+            ir.sess.cleanup()
+            if exists:
+                with iobj.open('r') as f:
+                    lines = f.read().splitlines()
+                res = dict(success='True', error=[], result=lines)
             else:
                 res = dict(success='False', error=[], result=[])
         except:
@@ -189,6 +308,7 @@ class IrodsApiRestService(object):
                 ir.add_object_metadata(path=params.get('irods_path'),
                                        meta=(params.get('attr_name'),
                                              params.get('attr_value') if len(params.get('attr_value')) > 0 else None))
+            ir.sess.cleanup()
         except:
             pass
 
@@ -263,7 +383,24 @@ class IrodsApiRestService(object):
 
         return _run_parameters_parser(res)
 
-    def _ssh_cmd(self, user, host, cmd):
+    def __get_metadata(self, irods_obj):
+
+        def retrieve_imetadata(iobj):
+                return [dict(name=str(m.name),
+                             value=str(m.value),
+                             units=str(m.units))
+                        for m in iobj.metadata.items()]
+
+        if len(irods_obj.metadata.items()) > 0:
+            return retrieve_imetadata(irods_obj)
+        else:
+            for d in irods_obj.data_objects:
+                if "SampleSheet.csv" in d.name and len(d.metadata.items()) > 0:
+                    return retrieve_imetadata(d)
+
+
+
+    def _ssh_cmd(self, user, host, cmd, switch=False):
         remote = "{}@{}".format(user, host)
         ssh = subprocess.Popen(["ssh", remote, cmd],
                                shell=False,
@@ -272,6 +409,9 @@ class IrodsApiRestService(object):
 
         result = [line.rstrip('\n') for line in ssh.stdout.readlines()]
         error = ssh.stderr.readlines()
+
+        if switch:
+            result, error = error, result
 
         if error:
             result = dict(success='False', error=error, result=[])
@@ -285,6 +425,10 @@ class IrodsApiRestService(object):
         icmds = dict(
             get_running_folders="ls {} | grep XX".format(params.get('run_folder')),
 
+            check_runs="presta check",
+
+            get_report_folders="ls {} | grep XX".format(params.get('report_folder')),
+
             get_run_info="cat {}".format(os.path.join(params.get('run_folder', ''),
                                                       params.get('this_run', ''),
                                                       params.get('run_info_file', ''))),
@@ -296,3 +440,17 @@ class IrodsApiRestService(object):
         )
 
         return icmds.get(cmd)
+
+    def _pagination(self, data, page_nr, page_size):
+        total = len(data)
+        first = int(page_nr*page_size) #if int(page_nr) == 0 else int(page_nr*page_size+1)
+        last = int(first+page_size) if int(first+page_size) <= int(total) else int(total)
+        data = data[first:last]
+        return data, total, last
+
+    def __str(self, txt):
+        if isinstance(txt, (type(None), int, float)):
+            txt = str(txt)
+        return txt.encode('latin-1', 'ignore')
+
+
