@@ -240,9 +240,8 @@ class IrodsApiRestService(object):
             pass
 
     def _ils(self, params, delivery=True):
-
+        ir = self._iinit(params)
         try:
-            ir = self._iinit(params)
             irods_path = params.get('irods_path')
             exists, iobj = ir.exists(irods_path, delivery=True)
             ir.sess.cleanup()
@@ -251,26 +250,27 @@ class IrodsApiRestService(object):
                 data_objects.extend([d for d in iobj.subcollections] if delivery else [d for d in iobj.subcollections])
                 return dict(success='True', error=[], result=data_objects)
         except:
+            ir.sess.cleanup()
             return dict(success='False', error=[], result=[])
 
     def _imkdir(self, params):
+        ir = self._iinit(params)
         try:
-            ir = self._iinit(params)
             collection = ir.create_object(dest_path=params.get('collection'), collection=True)
             ir.sess.cleanup()
-
             if collection and collection.path and len(collection.path)>0:
                 res = dict(success='True', error=[], result=dict(name=collection.name, path=collection.path))
             else:
                 res = dict(success='False', error=[], result=[])
         except:
+            ir.sess.cleanup()
             res = dict(success='False', error=[], result=[])
 
         return res
 
     def _iput(self, params):
+        ir = self._iinit(params)
         try:
-            ir = self._iinit(params)
             ir.put_object(source_path=params.get('local_path'), dest_path=params.get('irods_path'))
             obj = ir.get_object(params.get('irods_path'))
             ir.sess.cleanup()
@@ -280,13 +280,14 @@ class IrodsApiRestService(object):
             else:
                 res = dict(success='False', error=[], result=[])
         except:
+            ir.sess.cleanup()
             res = dict(success='False', error=[], result=[])
 
         return res
 
     def _iget(self, params):
+        ir = self._iinit(params)
         try:
-            ir = self._iinit(params)
             exists, iobj = ir.exists(params.get('irods_path'), delivery=True)
             ir.sess.cleanup()
             if exists:
@@ -296,13 +297,14 @@ class IrodsApiRestService(object):
             else:
                 res = dict(success='False', error=[], result=[])
         except:
+            ir.sess.cleanup()
             res = dict(success='False', error=[], result=[])
 
         return res
 
     def _iset_attr(self, params):
+        ir = self._iinit(params)
         try:
-            ir = self._iinit(params)
             if params.get('attr_name') and len(params.get('attr_name')) > 0:
 
                 ir.add_object_metadata(path=params.get('irods_path'),
@@ -310,6 +312,7 @@ class IrodsApiRestService(object):
                                              params.get('attr_value') if len(params.get('attr_value')) > 0 else None))
             ir.sess.cleanup()
         except:
+            ir.sess.cleanup()
             pass
 
     def _get_run_info(self, params, run):
@@ -397,8 +400,6 @@ class IrodsApiRestService(object):
             for d in irods_obj.data_objects:
                 if "SampleSheet.csv" in d.name and len(d.metadata.items()) > 0:
                     return retrieve_imetadata(d)
-
-
 
     def _ssh_cmd(self, user, host, cmd, switch=False):
         remote = "{}@{}".format(user, host)
