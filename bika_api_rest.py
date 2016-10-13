@@ -250,6 +250,21 @@ class BikaApiRestService(object):
                 transitions=[dict(id=self.__str(t['id']), title=self.__str(t['title'])) for t in r['transitions']],
         ) for r in res['objects']]
 
+        if params.get('client_id'):
+            result = [r for r in result if r['client_id'] == params.get('client_id')]
+
+        if params.get('order_date_from'):
+            result = [r for r in result if r['order_date'] >= params.get('order_date_from').replace('-', '/')]
+
+        if params.get('order_date_to'):
+            result = [r for r in result if r['order_date'] <= params.get('order_date_to').replace('-', '/')]
+
+        if params.get('expiration_date_from'):
+            result = [r for r in result if r['expiration_date'] >= params.get('expiration_date_from').replace('-', '/')]
+
+        if params.get('expiration_date_to'):
+            result = [r for r in result if r['expiration_date'] <= params.get('expiration_date_to').replace('-', '/')]
+
         return dict(objects=result, total=self.__str(res['total_objects']),
                     first=self.__str(res['first_object_nr']), last=self.__str(res['last_object_nr']),
                     success=self.__str(res['success']), error=self.__str(res['error']))
