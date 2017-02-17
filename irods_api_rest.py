@@ -333,6 +333,12 @@ class IrodsApiRestService(object):
                             host=params.get('host'),
                             cmd=self._get_icmd(cmd=cmd, params=params))
 
+        if len(res['result']) == 0:
+            cmd = 'get_run_info'
+            params.update(dict(this_run=os.path.join(run, 'raw')))
+            res = self._ssh_cmd(user=params.get('user'),
+                                host=params.get('host'),
+                                cmd=self._get_icmd(cmd=cmd, params=params))
         return _run_info_parser(res)
 
     def _get_run_parameters(self, params, run):
