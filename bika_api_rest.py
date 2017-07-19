@@ -3,8 +3,8 @@ from bottle import post, get, run, response, request
 import json
 
 
-from bikaclient import BikaClient
-
+# from bikaclient import BikaClient
+from alta.bims import Bims
 
 class BikaApiRestService(object):
 
@@ -13,9 +13,11 @@ class BikaApiRestService(object):
         pass
 
     def _get_bika_instance(self, params):
-        return BikaClient(host=params.get('host'),
-                          username=params.get('username'),
-                          password=params.get('password'))
+        bika = Bims(host=params.get('host'),
+                    user=params.get('username'),
+                    password=params.get('password'),
+                    bims_label='bikalims').bims
+        return bika.client
 
 
     def _success(self, body, return_code=200):
@@ -46,18 +48,37 @@ class BikaApiRestService(object):
 
     @wrap_default
     def login(self):
+
+        def is_signed(params, bika):
+            login_test = bika.get_clients(self._format_params(params))
+            if 'objects' in login_test and len(login_test['objects']) > 0:
+                return True
+            return False
+
         params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
 
-        login_test = bika.get_clients(params)
-        if 'objects' in login_test and len(login_test['objects']) > 0:
+        if is_signed(params, bika):
+
             user = params.get('username')
+
+            if user in ['admin']:
+                result = dict(
+                    userid=user,
+                    fullname=user,
+                    role='Site Administrator',
+
+                )
+                return dict(user=result,
+                            is_signed='True',
+                            success='True')
+
             for role in self.user_roles:
                 params['roles']=role
                 res = bika.get_users(self._format_params(params))
                 if 'users' in res:
                     for r in res['users']:
-                        if user in r['fullname']:
+                        if user in r['userid']:
                             result = dict(
                                 userid=self.__str(r['userid']),
                                 fullname=self.__str(r['fullname']),
@@ -77,12 +98,59 @@ class BikaApiRestService(object):
     def get_clients(self):
         params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
+        contacts = bika.get_contacts()
+
+        batches = bika.get_batches(dict()) if 'id' in params and params.get('id') else None
+        supply_orders = bika.get_supply_orders() if 'id' in params and params.get('id') else None
+
         res = bika.get_clients(params)
         result = [dict(
                 id=self.__str(r['id']),
                 title=self.__str(r['Title']),
+                name=self.__str(r['Name']),
                 client_id=self.__str(r['ClientID']),
-                path=self.__str(r['path'])) for r in res['objects']]
+                description=self.__str(r['description']),
+                path=self.__str(r['path']),
+                phone=self.__str(r['Phone']),
+                fax=self.__str(r['Fax']),
+                email_address=self.__str(r['EmailAddress']),
+                physical_address=dict(city=self.__str(r['PhysicalAddress']['city']),
+                                      # district=self.__str(r['PhysicalAddress']['district']),
+                                      zip=self.__str(r['PhysicalAddress']['zip']),
+                                      country=self.__str(r['PhysicalAddress']['country']),
+                                      state=self.__str(r['PhysicalAddress']['state']),
+                                      address=self.__str(r['PhysicalAddress']['address']),
+                                      ),
+                postal_address=dict(city=self.__str(r['PostalAddress']['city']),
+                                    # district=self.__str(r['PostalAddress']['district']),
+                                    zip=self.__str(r['PostalAddress']['zip']),
+                                    country=self.__str(r['PostalAddress']['country']),
+                                    state=self.__str(r['PostalAddress']['state']),
+                                    address=self.__str(r['PostalAddress']['address']),
+                                    ),
+                billing_address=dict(city=self.__str(r['BillingAddress']['city']),
+                                     # district=self.__str(r['BillingAddress']['district']),
+                                     zip=self.__str(r['BillingAddress']['zip']),
+                                     country=self.__str(r['BillingAddress']['country']),
+                                     state=self.__str(r['BillingAddress']['state']),
+                                     address=self.__str(r['BillingAddress']['address']),
+                                     ),
+                account_name=self.__str(r['AccountName']),
+                account_type=self.__str(r['AccountType']),
+                account_number=self.__str(r['AccountNumber']),
+                bank_name=self.__str(r['BankName']),
+                bank_branch=self.__str(r['BankBranch']),
+                review_state='active' if 'deactivate' in [self.__str(t['id']) for t in r['transitions']] else 'deactivate',
+                date=self.__str(r['Date']),
+                creation_date=self.__str(r['creation_date']),
+                modification_date=self.__str(r['modification_date']),
+                contacts=self._get_client_contacts(client_id=self.__str(r['id']), contacts=contacts),
+                creator=self.__str(r['Creator']),
+                batches=self._get_client_batches(client_name=self.__str(r['Name']), batches=batches) if batches else [],
+                cost_centers=self._get_client_supply_orders(client_id=self.__str(r['id']), supply_orders=supply_orders) if batches else [],
+                transitions=[dict(id=self.__str(t['id']), title=self.__str(t['title'])) for t in r['transitions']],
+
+        ) for r in res['objects']]
 
         return dict(objects=result, total=self.__str(res['total_objects']),
                     first=self.__str(res['first_object_nr']), last=self.__str(res['last_object_nr']),
@@ -583,6 +651,19 @@ class BikaApiRestService(object):
         res = bika.deactivate_lab_product(self._format_params(params))
         return self._outcome_action(res, params)
 
+    def activate_client(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.activate_client(self._format_params(params))
+        return self._outcome_action(res, params)
+
+    @wrap_default
+    def deactivate_client(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.deactivate_client(self._format_params(params))
+        return self._outcome_action(res, params)
+
     @wrap_default
     def set_analysis_result(self):
         params = self._get_params(request.forms)
@@ -733,6 +814,20 @@ class BikaApiRestService(object):
         res = bika.update_many(self._format_params(params))
         return self._outcome_update(res, params)
 
+    @wrap_default
+    def update_client(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.update(self._format_params(params))
+        return self._outcome_update(res, params)
+
+    @wrap_default
+    def update_clients(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.update_many(self._format_params(params))
+        return self._outcome_update(res, params)
+
     def _is_clerk(self, user):
         params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
@@ -745,6 +840,61 @@ class BikaApiRestService(object):
 
         return False
 
+    def _get_client_contacts(self, client_id, contacts):
+
+        return [dict(
+            id=self.__str(r['id']),
+            title=self.__str(r['Title']),
+            email_address=self.__str(r['EmailAddress']),
+            path=self.__str(r['path'])
+        ) for r in contacts['objects'] if client_id in r['path']]
+
+    def _get_client_batches(self, client_name, batches):
+
+        return [dict(
+            id=self.__str(r['id']),
+            title=self.__str(r['Title']),
+            description=self.__str(r['description']),
+            path=self.__str(r['path']),
+            client_batch_id=self.__str(r['ClientBatchID']),
+            client=self.__str(r['Client']),
+            date=self.__str(r['Date']),
+            creation_date=self.__str(r['creation_date']),
+            modification_date=self.__str(r['modification_date']),
+            subject=self.__str(r['subject'][0]) if len(r['subject']) == 1 else self.__str(r['review_state']),
+            review_state=self.__str(r['review_state']),
+            remarks=self.__str(r['Remarks']),
+            uid=self.__str(r['UID']),
+            creator=self.__str(r['Creator']),
+            cost_center=self.__str(r['rights']),
+            transitions=[dict(id=self.__str(t['id']), title=self.__str(t['title'])) for t in r['transitions']],
+        ) for r in batches['objects'] if client_name == r['Client']]
+
+    def _get_client_supply_orders(self, client_id, supply_orders):
+
+        return [dict(
+                id=self.__str(r['id']),
+                title=self.__str(r['title']),
+                description=self.__str(r['description']),
+                path=self.__str(r['path']),
+                creation_date=self.__str(r['creation_date']),
+                modification_date=self.__str(r['modification_date']),
+                expiration_date=self.__str(r['expirationDate']),
+                dispatched_date=self.__str(r['DateDispatched']),
+                order_date=self.__str(r['OrderDate']),
+                date=self.__str(r['Date']),
+                order_number=self.__str(r['OrderNumber']),
+                location=self.__str(r['location']),
+                rights=self.__str(r['rights']),
+                remarks=self.__str(r['Remarks']),
+                invoice=self.__str(r['Invoice']),
+                client_id=self.__str(r['path']).split('/')[-2],
+                review_state=self.__str(r['subject'][0]) if len(r['subject'])==1 else '',
+                uid=self.__str(r['UID']),
+                creator=self.__str(r['Creator']),
+                transitions=[dict(id=self.__str(t['id']), title=self.__str(t['title'])) for t in r['transitions']],
+        ) for r in supply_orders['objects'] if client_id in r['path']]
+
     def _get_analysis_requests(self, batch_id):
         params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
@@ -753,7 +903,7 @@ class BikaApiRestService(object):
         return [dict(
                 id=self.__str(r['id']),
                 path=self.__str(r['path']),
-        )for r in res['objects']]
+        ) for r in res['objects']]
 
     def _get_analyses(self, analyses):
         return [dict(

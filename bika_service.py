@@ -52,6 +52,8 @@ class BikaService(object):
         post('/bika/update/supply_orders')(bikaApi.update_supply_orders)
         post('/bika/update/lab_product')(bikaApi.update_lab_product)
         post('/bika/update/lab_products')(bikaApi.update_lab_products)
+        post('/bika/update/client')(bikaApi.update_client)
+        post('/bika/update/clients')(bikaApi.update_clients)
 
         post('/bika/cancel/batch')(bikaApi.cancel_batch)
         post('/bika/cancel/worksheet')(bikaApi.update_worksheets)
@@ -74,6 +76,8 @@ class BikaService(object):
         post('/bika/action/dispatch_supply_order')(bikaApi.dispatch_supply_order)
         post('/bika/action/activate_lab_product')(bikaApi.activate_lab_product)
         post('/bika/action/deactivate_lab_product')(bikaApi.deactivate_lab_product)
+        post('/bika/action/activate_client')(bikaApi.activate_client)
+        post('/bika/action/deactivate_client')(bikaApi.deactivate_client)
 
         post('/bika/create/batch')(bikaApi.create_batch)
         post('/bika/create/analysis_request')(bikaApi.create_analysis_request)
