@@ -118,23 +118,23 @@ class BikaApiRestService(object):
                                       # district=self.__str(r['PhysicalAddress']['district']),
                                       zip=self.__str(r['PhysicalAddress']['zip']),
                                       country=self.__str(r['PhysicalAddress']['country']),
-                                      state=self.__str(r['PhysicalAddress']['state']),
+                                      # state=self.__str(r['PhysicalAddress']['state']),
                                       address=self.__str(r['PhysicalAddress']['address']),
                                       ),
-                postal_address=dict(city=self.__str(r['PostalAddress']['city']),
-                                    # district=self.__str(r['PostalAddress']['district']),
-                                    zip=self.__str(r['PostalAddress']['zip']),
-                                    country=self.__str(r['PostalAddress']['country']),
-                                    state=self.__str(r['PostalAddress']['state']),
-                                    address=self.__str(r['PostalAddress']['address']),
-                                    ),
-                billing_address=dict(city=self.__str(r['BillingAddress']['city']),
-                                     # district=self.__str(r['BillingAddress']['district']),
-                                     zip=self.__str(r['BillingAddress']['zip']),
-                                     country=self.__str(r['BillingAddress']['country']),
-                                     state=self.__str(r['BillingAddress']['state']),
-                                     address=self.__str(r['BillingAddress']['address']),
-                                     ),
+                # postal_address=dict(city=self.__str(r['PostalAddress']['city']),
+                #                     # district=self.__str(r['PostalAddress']['district']),
+                #                     zip=self.__str(r['PostalAddress']['zip']),
+                #                     country=self.__str(r['PostalAddress']['country']),
+                #                     state=self.__str(r['PostalAddress']['state']),
+                #                     address=self.__str(r['PostalAddress']['address']),
+                #                     ),
+                # billing_address=dict(city=self.__str(r['BillingAddress']['city']),
+                #                      # district=self.__str(r['BillingAddress']['district']),
+                #                      zip=self.__str(r['BillingAddress']['zip']),
+                #                      country=self.__str(r['BillingAddress']['country']),
+                #                      state=self.__str(r['BillingAddress']['state']),
+                #                      address=self.__str(r['BillingAddress']['address']),
+                #                      ),
                 account_name=self.__str(r['AccountName']),
                 account_type=self.__str(r['AccountType']),
                 account_number=self.__str(r['AccountNumber']),
@@ -166,6 +166,7 @@ class BikaApiRestService(object):
                 id=self.__str(r['id']),
                 title=self.__str(r['Title']),
                 email_address=self.__str(r['EmailAddress']),
+                phone=self.__str(r['HomePhone']),
                 path=self.__str(r['path'])) for r in res['objects'] if client_id in r['path']]
 
         return dict(objects=result, total=self.__str(res['total_objects']),
@@ -475,6 +476,20 @@ class BikaApiRestService(object):
         res = bika.get_analysis_requests(params)
         result = self.__str(res['total_objects'])
         return result
+
+    @wrap_default
+    def create_client(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.create_client(self._format_params(params))
+        return self._outcome_creating(res, params)
+
+    @wrap_default
+    def create_contact(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.create_contact(self._format_params(params))
+        return self._outcome_creating(res, params)
 
     @wrap_default
     def create_batch(self):
@@ -828,6 +843,20 @@ class BikaApiRestService(object):
         res = bika.update_many(self._format_params(params))
         return self._outcome_update(res, params)
 
+    @wrap_default
+    def update_contact(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.update(self._format_params(params))
+        return self._outcome_update(res, params)
+
+    @wrap_default
+    def update_contacts(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.update_many(self._format_params(params))
+        return self._outcome_update(res, params)
+
     def _is_clerk(self, user):
         params = self._get_params(request.forms)
         bika = self._get_bika_instance(params)
@@ -846,6 +875,7 @@ class BikaApiRestService(object):
             id=self.__str(r['id']),
             title=self.__str(r['Title']),
             email_address=self.__str(r['EmailAddress']),
+            phone=self.__str(r['HomePhone']),
             path=self.__str(r['path'])
         ) for r in contacts['objects'] if client_id in r['path']]
 
