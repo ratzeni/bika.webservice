@@ -874,6 +874,8 @@ class BikaApiRestService(object):
         return [dict(
             id=self.__str(r['id']),
             title=self.__str(r['Title']),
+            first_name=self.__str(r['Firstname']),
+            surname=self.__str(r['Surname']),
             email_address=self.__str(r['EmailAddress']),
             phone=self.__str(r['HomePhone']),
             path=self.__str(r['path'])
