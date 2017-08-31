@@ -10,6 +10,7 @@ from tempfile import NamedTemporaryFile
 import csv
 import uuid
 import ast
+from distutils.util import strtobool
 from alta.objectstore import build_object_store
 
 
@@ -256,32 +257,47 @@ class IrodsApiRestService(object):
     def _imkdir(self, params):
         ir = self._iinit(params)
         try:
-            collection = ir.create_object(dest_path=params.get('collection'), collection=True)
+            obj_path = params.get('collection')
+            if ir.exists(path=obj_path) and ir.is_a_collection(obj_path=obj_path):
+                collection = ir.get_object(src_path=obj_path)
+            else:
+                collection = ir.create_object(dest_path=obj_path, collection=True)
             ir.sess.cleanup()
-            if collection and collection.path and len(collection.path)>0:
+            if collection and collection.path and len(collection.path) > 0:
                 res = dict(success='True', error=[], result=dict(name=collection.name, path=collection.path))
             else:
                 res = dict(success='False', error=[], result=[])
-        except:
+        except Exception as e:
             ir.sess.cleanup()
-            res = dict(success='False', error=[], result=[])
+            res = dict(success='False', error=self.__str(e.message), result=[])
 
         return res
 
     def _iput(self, params):
         ir = self._iinit(params)
+        res = dict(success='True', error=[], result=params)
+        overwrite = strtobool(params.get('overwrite_if_exists', 'False'))
         try:
-            ir.put_object(source_path=params.get('local_path'), dest_path=params.get('irods_path'))
-            obj = ir.get_object(params.get('irods_path'))
+            irods_path = params.get('irods_path')
+            if not ir.exists(path=irods_path):
+                ir.put_object(source_path=params.get('local_path'), dest_path=irods_path)
+            else:
+                if overwrite:
+                    ir.remove_object(obj_path=irods_path)
+                    ir.put_object(source_path=params.get('local_path'), dest_path=irods_path)
+                else:
+                    msg = '{} already exists'.format(irods_path)
+                    return dict(success='False', error=[self.__str(msg)], result=[])
+            obj = ir.get_object(irods_path)
             ir.sess.cleanup()
 
             if obj and obj.path and len(obj.path) > 0:
                 res = dict(success='True', error=[], result=dict(name=obj.name, path=obj.path))
             else:
                 res = dict(success='False', error=[], result=[])
-        except:
+        except Exception as e:
             ir.sess.cleanup()
-            res = dict(success='False', error=[], result=[])
+            res = dict(success='False', error=self.__str(e.message), result=[])
 
         return res
 
@@ -458,6 +474,9 @@ class IrodsApiRestService(object):
 
     def _pagination(self, data, page_nr, page_size):
         total = len(data)
+        if page_nr == 0 and page_size == 0:
+            return data, total, total
+
         first = int(page_nr*page_size) #if int(page_nr) == 0 else int(page_nr*page_size+1)
         last = int(first+page_size) if int(first+page_size) <= int(total) else int(total)
         data = data[first:last]
