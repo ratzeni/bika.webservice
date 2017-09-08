@@ -263,6 +263,7 @@ class BikaApiRestService(object):
                 path=self.__str(r['path']),
                 analyst=self.__str(r['Analyst']),
                 instrument=self.__str(r['Instrument']),
+                location=self.__str(r['location']),
                 creation_date=self.__str(r['creation_date']),
                 modification_date=self.__str(r['modification_date']),
                 date=self.__str(r['Date']),
