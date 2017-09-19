@@ -19,7 +19,6 @@ class BikaApiRestService(object):
                     bims_label='bikalims').bims
         return bika.client
 
-
     def _success(self, body, return_code=200):
         response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Methods'] = 'POST, GET, OPTIONS, PUT'
