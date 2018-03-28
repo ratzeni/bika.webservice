@@ -454,7 +454,7 @@ class IrodsApiRestService(object):
 
         icmds = dict(
 
-            get_running_folders="ls {0} | grep X | grep 1".format(params.get('run_folder')),
+            get_running_folders="ls {0} | grep 1".format(params.get('run_folder')),
 
             check_runs="presta check",
 
