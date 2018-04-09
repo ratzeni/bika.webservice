@@ -11,6 +11,7 @@ import csv
 import uuid
 import ast
 from distutils.util import strtobool
+from lxml.html import parse
 from alta.objectstore import build_object_store
 
 
@@ -102,6 +103,7 @@ class IrodsApiRestService(object):
             metadata=self.__get_metadata(irods_obj=r),
             files=[str(f.name) for f in r.data_objects],
             report_path=os.path.join(params.get('report_host'), r.name) if r.name in reports['result'] else '',
+            qc_summary=self.__get_qc_summary(base_url=os.path.join(params.get('report_host'), r.name)) if r.name in reports['result'] else ''
         ) for r in runs]
 
         return dict(objects=result, total=total, last=last, success=res.get('success'), error=res.get('error'))
@@ -429,6 +431,51 @@ class IrodsApiRestService(object):
             for d in irods_obj.data_objects:
                 if "SampleSheet.csv" in d.name and len(d.metadata.items()) > 0:
                     return retrieve_imetadata(d)
+
+    def __get_qc_summary(self, base_url):
+        fcid = base_url.split('/')[-1].split('_')[-1][1:]
+        url = os.path.join(base_url, 'Reports', 'html', fcid, 'all', 'all', 'all', 'lane.html')
+        try:
+            doc = parse(url)
+        except Exception as e:
+            return ''
+        reports = list()
+        for table in doc.iter('table'):
+            report = list()
+            if 'id' in table.attrib.keys():
+                labels = [t.text_content() for t in table.iter('th')]
+                for tr in table.iter('tr'):
+                    values = [t.text_content() for t in tr.iter('td')]
+                    if values:
+                        dictionary = dict(zip(labels, values))
+                        report.append(dictionary)
+                reports.append(report)
+
+        flowcell_report = reports[0]
+        lanes_report = reports[1]
+
+        qc_summary = dict(
+            flowcell_report=[
+                dict(
+                    clusters_raw=f.get('Clusters (Raw)'),
+                    clusters_pf=f.get('Clusters(PF)'),
+                    yield_mbases=f.get('Yield (MBases)'),
+                ) for f in flowcell_report],
+            lanes_report=[
+                dict(
+                    lane=l.get('Lane'),
+                    yield_mbases=l.get('Yield (Mbases)'),
+                    clusters_pf=l.get('PF Clusters'),
+                    clusters_pf_perc=l.get('% PFClusters'),
+                    mismatch_barcode=l.get('% One mismatchbarcode'),
+                    perfect_barcode=l.get('% Perfectbarcode'),
+                    quality_score=l.get('Mean QualityScore'),
+                    q30_bases=l.get('% >= Q30bases'),
+                    of_thelane=l.get('% of thelane'),
+                ) for l in lanes_report],
+        )
+
+        return qc_summary
 
     def _ssh_cmd(self, user, host, cmd, switch=False):
         remote = "{}@{}".format(user, host)
