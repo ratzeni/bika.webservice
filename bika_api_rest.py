@@ -314,6 +314,7 @@ class BikaApiRestService(object):
                 invoice=self.__str(r['Invoice']),
                 client_id=self.__str(r['path']).split('/')[-2],
                 review_state=self.__str(r['subject'][0]) if len(r['subject'])==1 else '',
+                contributors=self.__str(r['contributors'][0]) if len(r['contributors'])==1 else '',
                 uid=self.__str(r['UID']),
                 creator=self.__str(r['Creator']),
                 transitions=[dict(id=self.__str(t['id']), title=self.__str(t['title'])) for t in r['transitions']],
@@ -353,6 +354,7 @@ class BikaApiRestService(object):
             creation_date=self.__str(r['creation_date']),
             modification_date=self.__str(r['modification_date']),
             expiration_date=self.__str(r['expirationDate']),
+            effective_date=self.__str(r['effectiveDate']),
             date=self.__str(r['Date']),
             location=self.__str(r['location']),
             rights=self.__str(r['rights']),
@@ -394,6 +396,61 @@ class BikaApiRestService(object):
             creator=self.__str(r['Creator']),
             transitions=[dict(id=self.__str(t['id']), title=self.__str(t['title'])) for t in r['transitions']],
         ) for r in res['objects'] if 'bika_storagelocations' not in self.__str(r['id'])]
+
+        return dict(objects=result, total=self.__str(res['total_objects']),
+                    first=self.__str(res['first_object_nr']), last=self.__str(res['last_object_nr']),
+                    success=self.__str(res['success']), error=self.__str(res['error']))
+
+        return result
+
+    @wrap_default
+    def get_manufacturers(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.get_manufacturers(params)
+        result = [dict(
+            id=self.__str(r['id']),
+            title=self.__str(r['title']),
+            description=self.__str(r['description']),
+            path=self.__str(r['path']),
+            creation_date=self.__str(r['creation_date']),
+            modification_date=self.__str(r['modification_date']),
+            date=self.__str(r['Date']),
+            location=self.__str(r['location']),
+            rights=self.__str(r['rights']),
+            review_state=self.__str(r['subject'][0]) if len(r['subject']) == 1 else '',
+            uid=self.__str(r['UID']),
+            creator=self.__str(r['Creator']),
+            transitions=[dict(id=self.__str(t['id']), title=self.__str(t['title'])) for t in r['transitions']],
+        ) for r in res['objects'] if 'bika_manufacturers' not in self.__str(r['id'])]
+
+        return dict(objects=result, total=self.__str(res['total_objects']),
+                    first=self.__str(res['first_object_nr']), last=self.__str(res['last_object_nr']),
+                    success=self.__str(res['success']), error=self.__str(res['error']))
+
+        return result
+
+    @wrap_default
+    def get_suppliers(self):
+        params = self._get_params(request.forms)
+        bika = self._get_bika_instance(params)
+        res = bika.get_suppliers(params)
+        result = [dict(
+            id=self.__str(r['id']),
+            title=self.__str(r['title']),
+            name=self.__str(r['Name']),
+            description=self.__str(r['description']),
+            path=self.__str(r['path']),
+            creation_date=self.__str(r['creation_date']),
+            modification_date=self.__str(r['modification_date']),
+            date=self.__str(r['Date']),
+            location=self.__str(r['location']),
+            rights=self.__str(r['rights']),
+            review_state=self.__str(r['subject'][0]) if len(r['subject']) == 1 else '',
+            uid=self.__str(r['UID']),
+            creator=self.__str(r['Creator']),
+            transitions=[dict(id=self.__str(t['id']), title=self.__str(t['title'])) for t in r['transitions']],
+        ) for r in res['objects'] if 'bika_suppliers' not in self.__str(r['id'])]
 
         return dict(objects=result, total=self.__str(res['total_objects']),
                     first=self.__str(res['first_object_nr']), last=self.__str(res['last_object_nr']),
