@@ -105,6 +105,7 @@ class BikaService(object):
         post('/irods/get/running')(irodsApi.get_running_folders)
         post('/irods/get/runs')(irodsApi.get_runs)
         post('/irods/check/runs')(irodsApi.check_runs)
+        post('/irods/sync/batchbook')(irodsApi.sync_batchbook)
         post('/irods/put/samplesheet')(irodsApi.put_samplesheet)
         post('/irods/get/samplesheet')(irodsApi.get_samplesheet)
 

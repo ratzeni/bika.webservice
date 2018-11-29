@@ -123,6 +123,17 @@ class IrodsApiRestService(object):
         return dict(objects=samplesheet, success=res.get('success'), error=res.get('error'))
 
     @wrap_default
+    def sync_batchbook(self):
+        params = self._get_params(request.forms)
+        cmd = 'sync_batchbook'
+        res = self._ssh_cmd(user=params.get('user'),
+                            host=params.get('host'),
+                            cmd=self._get_icmd(cmd=cmd, params=params),
+                            switch=True)
+        result = list()
+        return dict(objects=result, success=res.get('success'), error=res.get('error'))
+
+    @wrap_default
     def check_runs(self):
         params = self._get_params(request.forms)
         cmd = 'check_runs'
@@ -514,6 +525,8 @@ class IrodsApiRestService(object):
             get_run_parameters="cat {}".format(os.path.join(params.get('run_folder', ''),
                                                             params.get('this_run', ''),
                                                             params.get('run_parameters_file', ''))),
+
+            sync_batchbook="presta sync -b {} -a -f --emit_events".format(params.get('batch_id', '0'))
 
         )
 
