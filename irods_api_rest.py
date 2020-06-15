@@ -445,6 +445,8 @@ class IrodsApiRestService(object):
 
     def __get_qc_summary(self, base_url):
         fcid = base_url.split('/')[-1].split('_')[-1][1:]
+        if '-' in fcid:
+            fcid = base_url.split('/')[-1].split('_')[-1]
         url = os.path.join(base_url, 'Reports', 'html', fcid, 'all', 'all', 'all', 'lane.html')
         try:
             doc = parse(url)
