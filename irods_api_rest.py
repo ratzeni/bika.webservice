@@ -462,6 +462,9 @@ class IrodsApiRestService(object):
                         report.append(dictionary)
                 reports.append(report)
 
+        if len(reports) == 0:
+            return dict()
+
         flowcell_report = reports[0]
         lanes_report = reports[1]
 
@@ -516,7 +519,7 @@ class IrodsApiRestService(object):
 
             check_runs="presta check",
 
-            get_report_folders="ls {0} | grep X".format(params.get('report_folder')),
+            get_report_folders="ls {0}".format(params.get('report_folder')),
 
             get_run_info="cat {}".format(os.path.join(params.get('run_folder', ''),
                                                       params.get('this_run', ''),
