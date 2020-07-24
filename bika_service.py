@@ -8,6 +8,7 @@ except ImportError:
 
 
 from bottle import post, get, run, response, request
+from comoda import a_logger, LOG_LEVELS
 
 from bika_api_rest import BikaApiRestService
 from irods_api_rest import IrodsApiRestService
@@ -117,7 +118,7 @@ class BikaService(object):
     def test_server(self):
         return json.dumps({'status':'Server running'})
 
-    def start_service(self, host, port, logfile, pidfile, server, debug=False):
+    def start_service(self, host, port, logfile, pidfile, server):
         log = open(logfile, 'a')
         pid =PIDLockFile(pidfile)
         with daemon.DaemonContext(stderr=log, pidfile=pid):
@@ -140,6 +141,12 @@ def get_parser():
     parser.add_argument('--log-file', type=str,
                         help='log file for the service daemon',
                         default='/tmp/bika_service.log')
+    parser.add_argument('--log-host', type=str,
+                        help='the host of the Logstash server',
+                        default='0.0.0.0')
+    parser.add_argument('--log-port', type=int,
+                        help='the port of the Logstash server',
+                        default=5000)
     return parser
 
 
@@ -147,12 +154,14 @@ def main(argv):
     parser = get_parser()
     args = parser.parse_args(argv)
 
-    bikaApi = BikaApiRestService()
-    irodsApi = IrodsApiRestService()
+    logger = a_logger('BikaService', level='INFO', host=args.log_host, port=args.log_port)
+
+    bikaApi = BikaApiRestService(logger)
+    irodsApi = IrodsApiRestService(logger)
 
     bikaService = BikaService(bikaApi=bikaApi, irodsApi=irodsApi)
 
-
+    logger.info("Starting Service")
     bikaService.start_service(args.host, args.port, args.log_file,
                               args.pid_file, args.server, args.debug)
 

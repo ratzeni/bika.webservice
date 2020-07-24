@@ -16,7 +16,7 @@ from alta.objectstore import build_object_store
 
 
 class IrodsApiRestService(object):
-    def __init__(self):
+    def __init__(self, logger):
 
         self.metadata = dict(
             rundir_collection=[
@@ -45,7 +45,7 @@ class IrodsApiRestService(object):
         self.negative_labels = ['running ', "waiting for ownership's modification",
                                 'SampleSheet not found',"Barcodes don't have the same size",
                                 'Metadata not found']
-        pass
+        self.logger = logger
 
     def _success(self, body, return_code=200):
         response.headers['Access-Control-Allow-Origin'] = '*'
@@ -79,6 +79,7 @@ class IrodsApiRestService(object):
 
     @wrap_default
     def get_runs(self):
+        self.logger.info("Getting Runs")
         params = self._get_params(request.forms)
         rundir_collection = params.get('samplesheet_collection')
         params.update(dict(irods_path=rundir_collection))
@@ -105,11 +106,12 @@ class IrodsApiRestService(object):
             report_path=os.path.join(params.get('report_host'), r.name) if r.name in reports['result'] else '',
             qc_summary=self.__get_qc_summary(base_url=os.path.join(params.get('report_host'), r.name)) if r.name in reports['result'] else ''
         ) for r in runs]
-
+        self.logger.info("Runs: {} - success: {} - error: {}".format(total, res.get('success'),res.get('error')))
         return dict(objects=result, total=total, last=last, success=res.get('success'), error=res.get('error'))
 
     @wrap_default
     def get_samplesheet(self):
+        self.logger.info("Getting Samplesheet")
         params = self._get_params(request.forms)
 
         rundir_collection = params.get('samplesheet_collection')
@@ -120,10 +122,14 @@ class IrodsApiRestService(object):
 
         res = self._iget(params)
         samplesheet = [l.split(',') for l in res.get('result')]
+        self.logger.info(irods_path + " - success: {} - error: {}".format(
+            res.get('success'),
+            res.get('error')))
         return dict(objects=samplesheet, success=res.get('success'), error=res.get('error'))
 
     @wrap_default
     def sync_batchbook(self):
+        self.logger.info("Synchronizing batchbook")
         params = self._get_params(request.forms)
         cmd = 'sync_batchbook'
         res = self._ssh_cmd(user=params.get('user'),
@@ -131,10 +137,12 @@ class IrodsApiRestService(object):
                             cmd=self._get_icmd(cmd=cmd, params=params),
                             switch=True)
         result = list()
+        self.logger.info("success: {} - error: {}".format(res.get('success'), res.get('error')))
         return dict(objects=result, success=res.get('success'), error=res.get('error'))
 
     @wrap_default
     def check_runs(self):
+        self.logger.info("Checking Runs")
         params = self._get_params(request.forms)
         cmd = 'check_runs'
         res = self._ssh_cmd(user=params.get('user'),
@@ -156,11 +164,14 @@ class IrodsApiRestService(object):
                 metadata=check_res[4],
                 ready="True" if set(check_res) == set(self.positive_labels) else "False",
             )])
-
+        self.logger.info("Runs: {} - success: {} - error: {}".format(len(result),
+                                                                     res.get('success'),
+                                                                     res.get('error')))
         return dict(objects=result, success=res.get('success'), error=res.get('error'))
 
     @wrap_default
     def get_running_folders(self):
+        self.logger.info("Getting Running Folders")
         params = self._get_params(request.forms)
         cmd = 'get_running_folders'
         result = list()
@@ -183,12 +194,15 @@ class IrodsApiRestService(object):
                 running_folder='MISSING RUN FOLDER',
                 run_info=dict(),
                 run_parameters=dict()))
+        self.logger.info("Runs: {} - success: {} - error: {}".format(len(result),
+                                                                     res.get('success'),
+                                                                     res.get('error')))
 
         return dict(objects=result, success=res.get('success'), error=res.get('error'))
 
     @wrap_default
     def put_samplesheet(self):
-
+        self.logger.info("Putting Samplesheet")
         params = self._get_params(request.forms)
 
         # creating samplesheet file
@@ -226,7 +240,7 @@ class IrodsApiRestService(object):
         f.close()
         if os.path.exists(local_path):
             os.remove(local_path)
-
+        self.logger.info("success: {} - error: {}".format(res.get('success'), res.get('error')))
         return dict(objects=res.get('result'), success=res.get('success'), error=res.get('error'))
 
     def _get_irods_conf(self, params):
@@ -517,11 +531,11 @@ class IrodsApiRestService(object):
 
         icmds = dict(
 
-            get_running_folders="ls {0}".format(params.get('run_folder')),
+            get_running_folders="ls {}".format(params.get('run_folder')),
 
             check_runs="presta check",
 
-            get_report_folders="ls {0}".format(params.get('report_folder')),
+            get_report_folders="ls {}".format(params.get('report_folder')),
 
             get_run_info="cat {}".format(os.path.join(params.get('run_folder', ''),
                                                       params.get('this_run', ''),
@@ -534,7 +548,7 @@ class IrodsApiRestService(object):
             sync_batchbook="presta sync -b {} -a -f --emit_events".format(params.get('batch_id', '0'))
 
         )
-
+        self.logger.info(cmd + " --> " + icmds.get(cmd))
         return icmds.get(cmd)
 
     def _pagination(self, data, page_nr, page_size):
