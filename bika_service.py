@@ -163,7 +163,7 @@ def main(argv):
 
     logger.info("Starting Service")
     bikaService.start_service(args.host, args.port, args.log_file,
-                              args.pid_file, args.server, args.debug)
+                              args.pid_file, args.server)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
